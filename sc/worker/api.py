@@ -20,31 +20,6 @@ except:
     quit()
 
 
-# action:API
-# types:geo,nbrhd,hotel,theme_park
-# filter:
-# legacy_format:true
-# urlList:true
-# strictParent:true
-# query:Перм
-# max:6
-# name_depth:3
-# interleaved:true
-# scoreThreshold:0.5
-# strictAnd:false
-# typeahead1_5:true
-# disableMaxGroupSize:true
-# geoBoostFix:true
-# neighborhood_geos:true
-# details:true
-# link_type:hotel,vr,eat,attr
-# rescue:true
-# uiOrigin:trip_search_Hotels
-# source:trip_search_Hotels
-# startTime:1510670874327
-# searchSessionId:4F676AF9780ADA335F1225290C3AB9E61510670583642ssid
-# nearPages:true
-
 def parse(location):
     tmp = 'https://www.tripadvisor.ru/TypeAheadJson?action=API' \
           '&types=geo%2Cnbrhd%2Chotel%2Ctheme_park' \
@@ -80,13 +55,15 @@ def parse(location):
           '&geoBoostFix=true' \
           '&neighborhood_geos=true' \
           '&details=true' \
-          '&link_type=hotel%2Cvr%2Ceat%2Cattr' \
+          '&link_type=geo,hotel,vr,eat,attr' \
           '&uiOrigin=GEOSCOPE' \
           '&source=GEOSCOPE' \
           '&query='+urllib.parse.quote(location)
-
     #  GET to TripAdvisor for required location:
     api_response = requests.get(url).json()
     url_from_autocomplete = "http://www.tripadvisor.com" + api_response['results'][0]['url']
-    print(url_from_autocomplete)
+    print("URL for required location: ", url_from_autocomplete)
     geo_id = api_response['results'][0]['value']
+    print("Downloading search results page")
+    page_response = requests.post(url=url_from_autocomplete).text
+    print(page_response)
