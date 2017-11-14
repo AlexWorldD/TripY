@@ -20,10 +20,73 @@ except:
     quit()
 
 
+# action:API
+# types:geo,nbrhd,hotel,theme_park
+# filter:
+# legacy_format:true
+# urlList:true
+# strictParent:true
+# query:Перм
+# max:6
+# name_depth:3
+# interleaved:true
+# scoreThreshold:0.5
+# strictAnd:false
+# typeahead1_5:true
+# disableMaxGroupSize:true
+# geoBoostFix:true
+# neighborhood_geos:true
+# details:true
+# link_type:hotel,vr,eat,attr
+# rescue:true
+# uiOrigin:trip_search_Hotels
+# source:trip_search_Hotels
+# startTime:1510670874327
+# searchSessionId:4F676AF9780ADA335F1225290C3AB9E61510670583642ssid
+# nearPages:true
+
 def parse(location):
-    geo_url = 'https://www.tripadvisor.com/TypeAheadJson?action=API&startTime=' + str(int(
-        time())) + '&uiOrigin=GEOSCOPE&source=GEOSCOPE&interleaved=true&types=geo,theme_park&neighborhood_geos=true&link_type=hotel&details=true&max=12&injectNeighborhoods=true&query=' + location
-    api_response = requests.get(geo_url).json()
-    # getting the TA url for th equery from the autocomplete response
+    tmp = 'https://www.tripadvisor.ru/TypeAheadJson?action=API' \
+          '&types=geo%2Cnbrhd%2Chotel%2Ctheme_park' \
+          '&filter=' \
+          '&legacy_format=true' \
+          '&urlList=true' \
+          '&strictParent=true' \
+          '&query=%D0%9F%D0%B5%D1%80%D0%BC' \
+          '&max=6' \
+          '&name_depth=3' \
+          '&interleaved=true' \
+          '&scoreThreshold=0.5' \
+          '&strictAnd=false' \
+          '&typeahead1_5=true' \
+          '&disableMaxGroupSize=true' \
+          '&geoBoostFix=true' \
+          '&neighborhood_geos=true' \
+          '&details=true' \
+          '&link_type=hotel%2Cvr%2Ceat%2Cattr' \
+          '&rescue=true' \
+          '&uiOrigin=trip_search_Hotels' \
+          '&source=trip_search_Hotels' \
+          '&startTime=1510670874327' \
+          '&searchSessionId=4F676AF9780ADA335F1225290C3AB9E61510670583642ssid' \
+          '&nearPages=true'
+    url = 'https://www.tripadvisor.ru/TypeAheadJson?action=API' \
+          '&types=geo,hotel,vr,eat,attr' \
+          '&max=6' \
+          '&scoreThreshold=0.5' \
+          '&strictAnd=false' \
+          '&typeahead1_5=true' \
+          '&disableMaxGroupSize=true' \
+          '&geoBoostFix=true' \
+          '&neighborhood_geos=true' \
+          '&details=true' \
+          '&link_type=hotel%2Cvr%2Ceat%2Cattr' \
+          '&uiOrigin=GEOSCOPE' \
+          '&source=GEOSCOPE' \
+          '&query='+urllib.parse.quote(location)
+
+    #  GET to TripAdvisor for required location:
+    api_response = requests.get(url).json()
     url_from_autocomplete = "http://www.tripadvisor.com" + api_response['results'][0]['url']
-    geo = api_response['results'][0]['value']
+    print(url_from_autocomplete)
+    geo_id = api_response['results'][0]['value']
