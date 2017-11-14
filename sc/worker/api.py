@@ -20,5 +20,10 @@ except:
     quit()
 
 
-def test():
-    print('done')
+def parse(location):
+    geo_url = 'https://www.tripadvisor.com/TypeAheadJson?action=API&startTime=' + str(int(
+        time())) + '&uiOrigin=GEOSCOPE&source=GEOSCOPE&interleaved=true&types=geo,theme_park&neighborhood_geos=true&link_type=hotel&details=true&max=12&injectNeighborhoods=true&query=' + location
+    api_response = requests.get(geo_url).json()
+    # getting the TA url for th equery from the autocomplete response
+    url_from_autocomplete = "http://www.tripadvisor.com" + api_response['results'][0]['url']
+    geo = api_response['results'][0]['value']
