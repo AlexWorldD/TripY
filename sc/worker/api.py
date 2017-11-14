@@ -1,5 +1,5 @@
 from datetime import datetime
-from time import time
+import time
 import requests
 import unicodecsv as csv
 import argparse
@@ -20,7 +20,7 @@ except:
     quit()
 
 
-def parse(location):
+def main_page(query):
     tmp = 'https://www.tripadvisor.ru/TypeAheadJson?action=API' \
           '&types=geo%2Cnbrhd%2Chotel%2Ctheme_park' \
           '&filter=' \
@@ -45,6 +45,7 @@ def parse(location):
           '&startTime=1510670874327' \
           '&searchSessionId=4F676AF9780ADA335F1225290C3AB9E61510670583642ssid' \
           '&nearPages=true'
+    RESULT = {}
     url = 'https://www.tripadvisor.ru/TypeAheadJson?action=API' \
           '&types=geo,hotel,vr,eat,attr' \
           '&max=6' \
@@ -58,12 +59,27 @@ def parse(location):
           '&link_type=geo,hotel,vr,eat,attr' \
           '&uiOrigin=GEOSCOPE' \
           '&source=GEOSCOPE' \
-          '&query='+urllib.parse.quote(location)
+          '&query='+urllib.parse.quote(query)
     #  GET to TripAdvisor for required location:
+    download_start = time.time()
     api_response = requests.get(url).json()
     url_from_autocomplete = "http://www.tripadvisor.com" + api_response['results'][0]['url']
     print("URL for required location: ", url_from_autocomplete)
-    geo_id = api_response['results'][0]['value']
+    # Parsing main INFO from response:
+    RESULT['GEO_ID'] = api_response['results'][0]['value']
+    RESULT['Location'] = api_response['results'][0]['details']['name']
+    RESULT['Country'] = api_response['results'][0]['details']['parent_name']
+    RESULT['Continent'] = api_response['results'][0]['details']['grandparent_name']
+    RESULT['Coordinates'] = [float(t) for t in api_response['results'][0]['coords'].split(',')]
     print("Downloading search results page")
+    # TODO ~1.3s/request
     page_response = requests.post(url=url_from_autocomplete).text
-    print(page_response)
+    # urllib.request.urlretrieve(url_from_autocomplete, 'test.html')
+    parser = html.fromstring(page_response)
+
+    # Get INFO from main page:
+    XPATH_TEXT = '//*[@id="taplc_expanding_read_more_box_0"]/div/div[1]/text()'
+    RESULT['Description'] = parser.xpath(XPATH_TEXT)[0][1:-1]
+    print(RESULT)
+    download_end = time.time()
+    print("Finish: ", download_end - download_start, ' s')
