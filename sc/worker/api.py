@@ -20,6 +20,22 @@ except:
     quit()
 
 
+class Type:
+    """Specific structure for entities such as Hotels/Restaurants and et. al."""
+
+    def __init__(self, url='', descr='', numbers=0, r_num=0):
+        """Create class represents specific entity for city"""
+        self.url = 'https://www.tripadvisor.ru' + url
+        # self.description = descr
+        self.numbers = numbers
+        self.reviews_number = r_num
+
+
+def to_numbers(cur):
+    """Helpful function for cleaning HTML string to int value"""
+    return int(''.join(re.findall("\d+", cur)))
+
+
 def main_page(query):
     tmp = 'https://www.tripadvisor.ru/TypeAheadJson?action=API' \
           '&types=geo%2Cnbrhd%2Chotel%2Ctheme_park' \
@@ -59,7 +75,7 @@ def main_page(query):
           '&link_type=geo,hotel,vr,eat,attr' \
           '&uiOrigin=GEOSCOPE' \
           '&source=GEOSCOPE' \
-          '&query='+urllib.parse.quote(query)
+          '&query=' + urllib.parse.quote(query)
     #  GET to TripAdvisor for required location:
     download_start = time.time()
     api_response = requests.get(url).json()
@@ -80,6 +96,25 @@ def main_page(query):
     # Get INFO from main page:
     XPATH_TEXT = '//*[@id="taplc_expanding_read_more_box_0"]/div/div[1]/text()'
     RESULT['Description'] = parser.xpath(XPATH_TEXT)[0][1:-1]
-    print(RESULT)
+
+    # TODO test different xpathes and there performance
+    XPATH_HOTEL_URL = '//*[@id="BODYCON"]/div[1]/div[1]/div/div[2]/div[2]/ul/li[contains(@class,"hotels")]/a/@href'
+    XPATH_HOTEL_NUMBERS = '//*[@id="BODYCON"]/div[1]/div[1]/div/div[2]/div[2]/ul/li[contains(@class,"hotels")]/a/span[3]/text()'
+    XPATH_HOTEL_REVIEW_NUMBERS = '//*[@id="BODYCON"]/div[1]/div[1]/div/div[2]/div[2]/ul/li[contains(@class,"hotels")]/a/span[4]/text()'
+    # RESULT['URL_Hotel'] = parser.xpath(XPATH_HOTEL_URL)[0]
+    # RESULT['Hotels_number'] = int(parser.xpath(XPATH_HOTEL_NUMBERS)[0][1:-1])
+    # RESULT['Hotels_rew_number'] = int(''.join(re.findall("\d+", parser.xpath(XPATH_REVIEW_NUMBERS)[0])))
+    hotels = Type(url=parser.xpath(XPATH_HOTEL_URL)[0],
+                  numbers=to_numbers(parser.xpath(XPATH_HOTEL_NUMBERS)[0]),
+                  r_num=to_numbers(parser.xpath(XPATH_HOTEL_REVIEW_NUMBERS)[0]))
+    # TODO add loop for this similar items:
+    XPATH_ATR_URL = '//*[@id="BODYCON"]/div[1]/div[1]/div/div[2]/div[2]/ul/li[contains(@class,"attractions")]/a/@href'
+    XPATH_ATR_NUMBERS = '//*[@id="BODYCON"]/div[1]/div[1]/div/div[2]/div[2]/ul/li[contains(@class,"attractions")]/a/span[3]/text()'
+    XPATH_ATR_REVIEW_NUMBERS = '//*[@id="BODYCON"]/div[1]/div[1]/div/div[2]/div[2]/ul/li[contains(@class,"attractions")]/a/span[4]/text()'
+    attractions = Type(url=parser.xpath(XPATH_ATR_URL)[0],
+                       numbers=to_numbers(parser.xpath(XPATH_ATR_NUMBERS)[0]),
+                       r_num=to_numbers(parser.xpath(XPATH_ATR_REVIEW_NUMBERS)[0]))
+    RESULT['HOTELS'] = hotels
+    RESULT['ATTRACTIONS'] = attractions
     download_end = time.time()
     print("Finish: ", download_end - download_start, ' s')

@@ -103,3 +103,5 @@ ENV/
 # Data Folders
 /.idea
 data/
+
+\.DS_Store
