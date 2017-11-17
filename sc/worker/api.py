@@ -9,9 +9,10 @@ import numpy as np
 import pandas as pd
 import urllib3
 import urllib.request
-from lxml import html,etree
+from lxml import html, etree
 import multiprocessing
 from tqdm import tqdm, tqdm_pandas
+from worker.hotels import *
 
 # CONSTANTS
 HEADERS = {
@@ -114,25 +115,26 @@ def main_page(query):
     parser = html.fromstring(page_response)
     # Get INFO from main page:
     XPATH_TEXT = '//*[@id="taplc_expanding_read_more_box_0"]/div/div[1]/text()'
-    RESULT['Description'] = parser.xpath(XPATH_TEXT)[0][1:-1]
-
+    _descr = parser.xpath(XPATH_TEXT)
+    RESULT['Description'] = _descr[0][1:-1] if len(_descr) > 0 else ''
     # Specify all possible places for city
-    possible_types = ['hotels', 'flights', 'attractions', 'restaurants', 'vacationRentals', 'forum']
-    for it in possible_types:
+    # possible_types = ['hotels', 'flights', 'attractions', 'restaurants', 'vacationRentals', 'forum']
+    possible_types = {'hotels': Hotels}
+    for key in possible_types:
         # TODO test different xpathes and there performance
         XPATH_URL = parser.xpath(
-            '//*[@id="BODYCON"]/div[1]/div[1]/div/div[2]/div[2]/ul/li[contains(@class,"' + it + '")]/a/@href')
+            '//*[@id="BODYCON"]/div[1]/div[1]/div/div[2]/div[2]/ul/li[contains(@class,"' + key + '")]/a/@href')
         XPATH_NUMBERS = parser.xpath(
-            '//*[@id="BODYCON"]/div[1]/div[1]/div/div[2]/div[2]/ul/li[contains(@class,"' + it + '")]/a/span[3]/text()')
+            '//*[@id="BODYCON"]/div[1]/div[1]/div/div[2]/div[2]/ul/li[contains(@class,"' + key + '")]/a/span[3]/text()')
         XPATH_REVIEW_NUMBERS = parser.xpath(
-            '//*[@id="BODYCON"]/div[1]/div[1]/div/div[2]/div[2]/ul/li[contains(@class,"' + it + '")]/a/span[4]/text()')
+            '//*[@id="BODYCON"]/div[1]/div[1]/div/div[2]/div[2]/ul/li[contains(@class,"' + key + '")]/a/span[4]/text()')
         _url = XPATH_URL[0] if len(XPATH_URL) > 0 else ''
         _numbers = to_numbers(XPATH_NUMBERS[0]) if len(XPATH_NUMBERS) else 0
         _r_num = to_numbers(XPATH_REVIEW_NUMBERS[0]) if len(XPATH_REVIEW_NUMBERS) else 0
-        RESULT[it.upper()] = PlacesType(url=_url,
-                                        numbers=_numbers,
-                                        r_num=_r_num)
-
+        RESULT[key.upper()] = possible_types[key](url=_url,
+                                                  numbers=_numbers,
+                                                  r_num=_r_num)
+    RESULT['HOTELS'].collect_links()
     download_end = time.time()
     print("Finish crawling MAIN page: ", download_end - download_start, ' s')
     return RESULT
@@ -146,12 +148,12 @@ def hotels_page(url='https://www.tripadvisor.ru/Hotels-g298507-St_Petersburg_Nor
     :param referer: link to previous page which is necessary for correct server response
     :return:
     """
-    # HEADERS['Referer'] = referer
+    HEADERS['Referer'] = referer
     # Start crawling MAIN-PAGE HTML page about required location:
     print("Downloading HOTELS search results page")
     # TODO ~1.3s/request
     # TODO using with headers increase loading size 3 times: from 18k of lines to 8k.
-    page_response = requests.post(url=url, headers=HEADERS, cookies=COOKIES).text
+    page_response = requests.get(url=url, headers=HEADERS, cookies=COOKIES).text
     # page_response = requests.post(url=url).text
     # with codecs.open('hotels_OA30.html', 'w', 'utf-8-sig') as file:
     #     file.write(page_response)
@@ -159,6 +161,9 @@ def hotels_page(url='https://www.tripadvisor.ru/Hotels-g298507-St_Petersburg_Nor
     # print(page_response)
     parser = html.fromstring(page_response)
     # 30 Hotels per page:
-    hotel_lists = parser.xpath('//div[contains(@class,"hasDates")]/div[contains(@class,"prw_meta_hsx")]/div[@class="listing"]')
-    print(etree.tostring(hotel_lists[0], pretty_print=True))
+    # //*[@id="taplc_hsx_hotel_list_dusty_hotels_combined_sponsored_0"]/div[2]/div/div[1]/div[2]/div[1]/div
+    hotel_lists = parser.xpath(
+        '//div[contains(@class,"hasDates")]/div[contains(@class,"prw_meta_hsx")]/div[@class="listing"]//div[@class="listing_title"]/a/@href')
+    print(hotel_lists)
+
 #   prw_rup
