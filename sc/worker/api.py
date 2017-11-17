@@ -1,5 +1,6 @@
 from datetime import datetime
 import time
+import codecs
 import requests
 import unicodecsv as csv
 import argparse
@@ -8,8 +9,25 @@ import numpy as np
 import pandas as pd
 import urllib3
 import urllib.request
+from lxml import html,etree
 import multiprocessing
 from tqdm import tqdm, tqdm_pandas
+
+# CONSTANTS
+HEADERS = {
+    'Accept': 'text/javascript, text/html, application/xml, text/xml, */*',
+    'Accept-Encoding': 'gzip,deflate',
+    'Accept-Language': 'en-US,en;q=0.5',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8',
+    'Host': 'www.tripadvisor.com',
+    'Pragma': 'no-cache',
+    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.89 Safari/537.36',
+    'X-Requested-With': 'XMLHttpRequest'
+}
+
+COOKIES = {"SetCurrency": "USD"}
 
 try:
     from lxml import html, etree
@@ -20,7 +38,7 @@ except:
     quit()
 
 
-class Type:
+class PlacesType:
     """Specific structure for entities such as Hotels/Restaurants and et. al."""
 
     def __init__(self, url='', descr='', numbers=0, r_num=0):
@@ -37,6 +55,7 @@ def to_numbers(cur):
 
 
 def main_page(query):
+    download_start = time.time()
     tmp = 'https://www.tripadvisor.ru/TypeAheadJson?action=API' \
           '&types=geo%2Cnbrhd%2Chotel%2Ctheme_park' \
           '&filter=' \
@@ -77,44 +96,69 @@ def main_page(query):
           '&source=GEOSCOPE' \
           '&query=' + urllib.parse.quote(query)
     #  GET to TripAdvisor for required location:
-    download_start = time.time()
     api_response = requests.get(url).json()
     url_from_autocomplete = "http://www.tripadvisor.com" + api_response['results'][0]['url']
     print("URL for required location: ", url_from_autocomplete)
-    # Parsing main INFO from response:
+    # Parsing main INFO from RESPONSE:
     RESULT['GEO_ID'] = api_response['results'][0]['value']
     RESULT['Location'] = api_response['results'][0]['details']['name']
     RESULT['Country'] = api_response['results'][0]['details']['parent_name']
     RESULT['Continent'] = api_response['results'][0]['details']['grandparent_name']
     RESULT['Coordinates'] = [float(t) for t in api_response['results'][0]['coords'].split(',')]
+
+    # Start crawling MAIN-PAGE HTML page about required location:
     print("Downloading search results page")
     # TODO ~1.3s/request
     page_response = requests.post(url=url_from_autocomplete).text
-    # urllib.request.urlretrieve(url_from_autocomplete, 'test.html')
+    # urllib.request.urlretrieve(url_from_autocomplete, 'test.html') # Test downloading page for visual comparing.
     parser = html.fromstring(page_response)
-
     # Get INFO from main page:
     XPATH_TEXT = '//*[@id="taplc_expanding_read_more_box_0"]/div/div[1]/text()'
     RESULT['Description'] = parser.xpath(XPATH_TEXT)[0][1:-1]
 
-    # TODO test different xpathes and there performance
-    XPATH_HOTEL_URL = '//*[@id="BODYCON"]/div[1]/div[1]/div/div[2]/div[2]/ul/li[contains(@class,"hotels")]/a/@href'
-    XPATH_HOTEL_NUMBERS = '//*[@id="BODYCON"]/div[1]/div[1]/div/div[2]/div[2]/ul/li[contains(@class,"hotels")]/a/span[3]/text()'
-    XPATH_HOTEL_REVIEW_NUMBERS = '//*[@id="BODYCON"]/div[1]/div[1]/div/div[2]/div[2]/ul/li[contains(@class,"hotels")]/a/span[4]/text()'
-    # RESULT['URL_Hotel'] = parser.xpath(XPATH_HOTEL_URL)[0]
-    # RESULT['Hotels_number'] = int(parser.xpath(XPATH_HOTEL_NUMBERS)[0][1:-1])
-    # RESULT['Hotels_rew_number'] = int(''.join(re.findall("\d+", parser.xpath(XPATH_REVIEW_NUMBERS)[0])))
-    hotels = Type(url=parser.xpath(XPATH_HOTEL_URL)[0],
-                  numbers=to_numbers(parser.xpath(XPATH_HOTEL_NUMBERS)[0]),
-                  r_num=to_numbers(parser.xpath(XPATH_HOTEL_REVIEW_NUMBERS)[0]))
-    # TODO add loop for this similar items:
-    XPATH_ATR_URL = '//*[@id="BODYCON"]/div[1]/div[1]/div/div[2]/div[2]/ul/li[contains(@class,"attractions")]/a/@href'
-    XPATH_ATR_NUMBERS = '//*[@id="BODYCON"]/div[1]/div[1]/div/div[2]/div[2]/ul/li[contains(@class,"attractions")]/a/span[3]/text()'
-    XPATH_ATR_REVIEW_NUMBERS = '//*[@id="BODYCON"]/div[1]/div[1]/div/div[2]/div[2]/ul/li[contains(@class,"attractions")]/a/span[4]/text()'
-    attractions = Type(url=parser.xpath(XPATH_ATR_URL)[0],
-                       numbers=to_numbers(parser.xpath(XPATH_ATR_NUMBERS)[0]),
-                       r_num=to_numbers(parser.xpath(XPATH_ATR_REVIEW_NUMBERS)[0]))
-    RESULT['HOTELS'] = hotels
-    RESULT['ATTRACTIONS'] = attractions
+    # Specify all possible places for city
+    possible_types = ['hotels', 'flights', 'attractions', 'restaurants', 'vacationRentals', 'forum']
+    for it in possible_types:
+        # TODO test different xpathes and there performance
+        XPATH_URL = parser.xpath(
+            '//*[@id="BODYCON"]/div[1]/div[1]/div/div[2]/div[2]/ul/li[contains(@class,"' + it + '")]/a/@href')
+        XPATH_NUMBERS = parser.xpath(
+            '//*[@id="BODYCON"]/div[1]/div[1]/div/div[2]/div[2]/ul/li[contains(@class,"' + it + '")]/a/span[3]/text()')
+        XPATH_REVIEW_NUMBERS = parser.xpath(
+            '//*[@id="BODYCON"]/div[1]/div[1]/div/div[2]/div[2]/ul/li[contains(@class,"' + it + '")]/a/span[4]/text()')
+        _url = XPATH_URL[0] if len(XPATH_URL) > 0 else ''
+        _numbers = to_numbers(XPATH_NUMBERS[0]) if len(XPATH_NUMBERS) else 0
+        _r_num = to_numbers(XPATH_REVIEW_NUMBERS[0]) if len(XPATH_REVIEW_NUMBERS) else 0
+        RESULT[it.upper()] = PlacesType(url=_url,
+                                        numbers=_numbers,
+                                        r_num=_r_num)
+
     download_end = time.time()
-    print("Finish: ", download_end - download_start, ' s')
+    print("Finish crawling MAIN page: ", download_end - download_start, ' s')
+    return RESULT
+
+
+def hotels_page(url='https://www.tripadvisor.ru/Hotels-g298507-St_Petersburg_Northwestern_District-Hotels.html',
+                referer='https://www.tripadvisor.ru'):
+    """
+    Special function for crawling data about Hotels form search queue
+    :param url: link to the 1st page of search result
+    :param referer: link to previous page which is necessary for correct server response
+    :return:
+    """
+    # HEADERS['Referer'] = referer
+    # Start crawling MAIN-PAGE HTML page about required location:
+    print("Downloading HOTELS search results page")
+    # TODO ~1.3s/request
+    # TODO using with headers increase loading size 3 times: from 18k of lines to 8k.
+    page_response = requests.post(url=url, headers=HEADERS, cookies=COOKIES).text
+    # page_response = requests.post(url=url).text
+    # with codecs.open('hotels_OA30.html', 'w', 'utf-8-sig') as file:
+    #     file.write(page_response)
+    # urllib.request.urlretrieve(url, 'hotels2.html') # Test downloading page for visual comparing.
+    # print(page_response)
+    parser = html.fromstring(page_response)
+    # 30 Hotels per page:
+    hotel_lists = parser.xpath('//div[contains(@class,"hasDates")]/div[contains(@class,"prw_meta_hsx")]/div[@class="listing"]')
+    print(etree.tostring(hotel_lists[0], pretty_print=True))
+#   prw_rup
