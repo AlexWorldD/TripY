@@ -115,8 +115,8 @@ def main_page(query):
     parser = html.fromstring(page_response)
     # Get INFO from main page:
     XPATH_TEXT = '//*[@id="taplc_expanding_read_more_box_0"]/div/div[1]/text()'
-    RESULT['Description'] = parser.xpath(XPATH_TEXT)[0][1:-1]
-
+    _descr = parser.xpath(XPATH_TEXT)
+    RESULT['Description'] = _descr[0][1:-1] if len(_descr) > 0 else ''
     # Specify all possible places for city
     # possible_types = ['hotels', 'flights', 'attractions', 'restaurants', 'vacationRentals', 'forum']
     possible_types = {'hotels': Hotels}
