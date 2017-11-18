@@ -1,6 +1,7 @@
 import time
 import requests
 from tqdm import tqdm
+from abc import ABC, abstractmethod
 
 try:
     from lxml import html, etree
@@ -23,6 +24,7 @@ class PlacesType:
         self.numbers = numbers
         self.reviews_number = r_num
         self.host = 'https://www.tripadvisor.ru'
+        self.parser=''
 
     # CONSTANTS
     HEADERS = {
@@ -40,6 +42,54 @@ class PlacesType:
     COOKIES = {"SetCurrency": "USD"}
 
 
+class AbstractPlace(ABC):
+    """
+    Abstract class for THE Hotel/Restaurant and et. al.
+    Includes common info such as link, address, rating and etc.
+    """
+
+    def __init__(self, url=''):
+        """Abstract initialisation for class"""
+        self.url = 'https://www.tripadvisor.ru' + url
+        self.host = 'https://www.tripadvisor.ru'
+        super(AbstractPlace, self).__init__()
+
+    # CONSTANTS
+    HEADERS = {
+        'Accept': 'text/javascript, text/html, application/xml, text/xml, */*',
+        'Accept-Encoding': 'gzip,deflate',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8',
+        'Host': 'www.tripadvisor.com',
+        'Pragma': 'no-cache',
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.89 Safari/537.36'
+        # 'X-Requested-With': 'XMLHttpRequest'
+    }
+    COOKIES = {"SetCurrency": "USD"}
+
+    def download(self):
+        """
+        Function for downloading HTML page from server to local machine.
+        """
+        # TODO try to modify for AJAX request, should be ~2.2 times faster
+        page_response = requests.get(url=self.url, headers=self.HEADERS, cookies=self.COOKIES).text
+        self.parser = html.fromstring(page_response)
+
+    @abstractmethod
+    def collect_main_info(self):
+        pass
+
+
+class Hotel(AbstractPlace):
+    """
+    Entity for Hotel
+    """
+    def collect_main_info(self):
+        print('Collecting main info')
+
+
 class Hotels(PlacesType):
     """
     Specific class for hotel entity
@@ -49,15 +99,11 @@ class Hotels(PlacesType):
     def collect_links(self):
         """
         Special function for crawling data about Hotels form search queue
-        :param url: link to the 1st page of search result
-        :param referer: link to previous page which is necessary for correct server response
-        :return:
         """
         # HEADERS['Referer'] = referer
         # Start crawling MAIN-PAGE HTML page about required location:
         print("Downloading HOTELS search results page")
         self._get()
-
 
     def _get(self):
         """
