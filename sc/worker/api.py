@@ -138,5 +138,3 @@ def main_page(query):
     download_end = time.time()
     print("Finish crawling MAIN page: ", download_end - download_start, ' s')
     return RESULT
-
-

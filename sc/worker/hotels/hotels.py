@@ -2,6 +2,7 @@ import time
 import requests
 from tqdm import tqdm
 from abc import ABC, abstractmethod
+import re, json
 
 try:
     from lxml import html, etree
@@ -10,6 +11,108 @@ except:
     print()
     print("sudo apt-get install python3-lxml")
     quit()
+
+
+def test_parsing(parser, queue, iterations=10000):
+    """
+    DEV function for testing parsing performance for required queue
+    :param parser: HTML parser object
+    :param queue: xPath
+    :return: Spend times
+    """
+    if len(parser.xpath(queue)) == 0:
+        print('Wrong queue!')
+        return 0
+    download_start = time.time()
+    for it in tqdm(range(iterations)):
+        parser.xpath(queue)
+    download_end = time.time()
+    print('\nxPath: ', queue)
+    print("Finish crawling:", download_end - download_start, ' s')
+
+
+def show_xpath(data):
+    """
+    DEV function for printing xPath parsing results
+    :param data: return from xPath parser
+    :return:
+    """
+    print(etree.tostring(data[0], pretty_print=True))
+
+
+def to_numbers(cur):
+    """Helpful function for cleaning HTML string to int value"""
+    if cur=='':
+        return 0
+    return int(''.join(re.findall("\d+", cur)))
+
+
+def get_value(it):
+    """
+    Simplest funtion for explicit outing of range
+    :param it: parsing result
+    :return:
+    """
+    return it[0] if len(it) > 0 else ''
+
+
+class Address:
+    """
+    Simple structure for address entity: country, city, street and et al.
+    """
+
+    def __init__(self):
+        """Create class represents specific entity for city"""
+        self.zip = 0
+        self.country = ''
+        self.city = ''
+        self.street = ''
+        self.extended = ''
+        self.building = 0
+
+    def parse(self, it):
+        """
+        Function for parsing HTML-object to splitting values
+        :param it: parent HTML-object, includes the address information
+        :return:
+        """
+        # SPEED: 330 iterations per second
+        # TODO make robust for nan values or not-find DOM element
+        _st_add = it.xpath('./div/span[@class="street-address"]/text()')[0].split(',')
+        self.street = _st_add[0]
+        self.building = _st_add[1]
+        # _tmp = it.xpath('./div/span[@class="extended-address"]/text()')
+        # _tmp = _tmp[0] if len(_tmp) > 0 else ''
+        self.extended = str(get_value(it.xpath('./div/span[@class="extended-address"]/text()')))
+        _st_add = it.xpath('./div/span[@class="locality"]/text()')[0]
+        self.zip = int(''.join(re.findall("\d+", _st_add)))
+        self.city = ''.join(re.findall("\D+\\b", _st_add))[0:-1]
+        self.country = str(it.xpath('./div/span[@class="country-name"]/text()')[0])
+
+
+class Contacts:
+    """
+    Simple structure for available contacts for entity
+    """
+
+    def __init__(self):
+        """Empty instance of class"""
+        self.phone = 0
+        self.web = ''
+
+    def parse(self, it):
+        """
+        Function for parsing HTML-object to splitting values
+        :param it: parent HTML-object, includes the contacts information
+        :return:
+        """
+        # SPEED: 330 iterations per second
+        # TODO make robust for nan values or not-find DOM element
+        _st_add = get_value(it[0].xpath('./div[@class="blEntry phone"]/span/text()'))
+        self.phone = to_numbers(_st_add)
+        # TODO try to parse link to official site...
+        _st_add = get_value(it[0].xpath('./div[@class="blEntry website"]/span/text()'))
+        self.web = str(_st_add)
 
 
 class PlacesType:
@@ -24,7 +127,7 @@ class PlacesType:
         self.numbers = numbers
         self.reviews_number = r_num
         self.host = 'https://www.tripadvisor.ru'
-        self.parser=''
+        self.parser = ''
 
     # CONSTANTS
     HEADERS = {
@@ -53,6 +156,9 @@ class AbstractPlace(ABC):
         self.url = 'https://www.tripadvisor.ru' + url
         self.host = 'https://www.tripadvisor.ru'
         super(AbstractPlace, self).__init__()
+        self.title = ''
+        self.address = Address()
+        self.contacts = Contacts()
 
     # CONSTANTS
     HEADERS = {
@@ -86,8 +192,25 @@ class Hotel(AbstractPlace):
     """
     Entity for Hotel
     """
+
     def collect_main_info(self):
+        self.download()
         print('Collecting main info')
+        # TODO try to use hierarchical parsing
+        # _parser_header = self.parser.xpath('//*[@id="taplc_hr_atf_north_star_nostalgic_0"]/div[1]')[0]
+        # TODO add cleaning string
+        # test_parsing(self.parser, '//h1[@id="HEADING"]/text()')
+        # TODO add choosing of relative vs. absolute xPaths
+        # self.title = self.parser.xpath("/html/body[@id='BODY_BLOCK_JQUERY_REFLOW']/div[@id='PAGE']/div[@id='taplc_hr_atf_north_star_nostalgic_0']/div[@class='atf_header_wrapper']/div[@class='atf_header ui_container is-mobile full_width']/div[@id='taplc_location_detail_header_hotels_0']/h1[@id='HEADING']/text()")
+        _tmp = self.parser.xpath('//h1[@id="HEADING"]/text()')
+        self.title = _tmp[0] if len(_tmp) > 0 else ''
+        _tmp = self.parser.xpath(
+            "/html/body[@id='BODY_BLOCK_JQUERY_REFLOW']/div[@id='PAGE']/div[@id='taplc_hr_atf_north_star_nostalgic_0']/div[@class='atf_header_wrapper']/div[@class='atf_header ui_container is-mobile full_width']/div[@id='taplc_location_detail_header_hotels_0']/div[@class='prw_rup prw_common_atf_header_bl headerBL']/div[@class='blRow']")
+        _tmp = _tmp if len(_tmp) > 0 else self.parser.xpath('//div[@class="blRow"]')
+        self.json = json.loads(self.parser.xpath('//script[@type="application/ld+json"]//text()')[0])
+        if len(_tmp) > 0:
+            self.address.parse(_tmp[0])
+            self.contacts.parse(_tmp)
 
 
 class Hotels(PlacesType):
