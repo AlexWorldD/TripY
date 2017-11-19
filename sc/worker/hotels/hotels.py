@@ -3,6 +3,8 @@ import requests
 from tqdm import tqdm
 from abc import ABC, abstractmethod
 import re, json
+import multiprocessing
+from pathos.multiprocessing import ProcessingPool as Pool
 
 try:
     from lxml import html, etree
@@ -71,10 +73,31 @@ def get_web(it, d_id):
     }
     _url = 'https://www.tripadvisor.com/ShowUrl?&excludeFromVS=true&odc=MobileBusinessListingsUrl&d=' + d_id + '&url=1'
     if len(it) > 0:
+        print('---', d_id, '---')
         _raw_web = requests.post(url=_url, headers=_HEADERS, allow_redirects=False).headers._store['location'][1]
         return _raw_web.split('?')[0]
     else:
         return ''
+
+
+def get_hotel(link):
+    """
+    Temporary (or not...) function for parsing info about hotel via link
+    :param link: URL to the hotel page on the host
+    :return: Hotel() object
+    """
+    _h = Hotel(url=link)
+    _h.collect_main_info()
+    return _h
+
+
+def get_hotel_info(_hotel):
+    """
+    Temporary (or not...) function for parsing info about hotel via link
+    :param link: URL to the hotel page on the host
+    :return: Hotel() object
+    """
+    return _hotel.collect_main_info()
 
 
 class Address:
@@ -91,7 +114,7 @@ class Address:
         self.extended = ''
         self.building = 0
 
-    def parse(self, it):
+    def parse(self, it, link=''):
         """
         Function for parsing HTML-object to splitting values
         :param it: parent HTML-object, includes the address information
@@ -99,16 +122,29 @@ class Address:
         """
         # SPEED: 330 iterations per second
         # TODO make robust for nan values or not-find DOM element
-        _st_add = it.xpath('./div/span[@class="street-address"]/text()')[0].split(',')
-        self.street = _st_add[0]
-        self.building = _st_add[1]
+        try:
+            _st_add = it.xpath('./div/span[@class="street-address"]/text()')[0].split(',')
+            _l = len(_st_add)
+            self.street = _st_add[0] if _l > 0 else ''
+            self.building = _st_add[1] if _l > 1 else ''
+        except:
+            print("Can't parse street address:", link)
         # _tmp = it.xpath('./div/span[@class="extended-address"]/text()')
         # _tmp = _tmp[0] if len(_tmp) > 0 else ''
         self.extended = str(get_value(it.xpath('./div/span[@class="extended-address"]/text()')))
         _st_add = it.xpath('./div/span[@class="locality"]/text()')[0]
-        self.zip = int(''.join(re.findall("\d+", _st_add)))
-        self.city = ''.join(re.findall("\D+\\b", _st_add))[0:-1]
-        self.country = str(it.xpath('./div/span[@class="country-name"]/text()')[0])
+        try:
+            self.zip = int(''.join(re.findall("\d+", _st_add)))
+        except:
+            print("Can't parse ZIP:", link)
+        try:
+            self.city = ''.join(re.findall("\D+\\b", _st_add))[0:-1]
+        except:
+            print("Can't parse city:", link)
+        try:
+            self.country = str(it.xpath('./div/span[@class="country-name"]/text()')[0])
+        except:
+            print("Can't parse country:", link)
 
 
 class Contacts:
@@ -131,7 +167,6 @@ class Contacts:
         # TODO make robust for nan values or not-find DOM element
         _st_add = get_value(it[0].xpath('./div[@class="blEntry phone"]/span/text()'))
         self.phone = to_numbers(_st_add)
-        # TODO try to parse link to official site...
         self.web = get_web(it[0].xpath('./div[@class="blEntry website"]/span/text()'), d_id)
 
 
@@ -216,7 +251,7 @@ class Hotel(AbstractPlace):
 
     def collect_main_info(self):
         self.download()
-        print('Collecting main info')
+        # print('Collecting main info')
         # TODO try to use hierarchical parsing
         # _parser_header = self.parser.xpath('//*[@id="taplc_hr_atf_north_star_nostalgic_0"]/div[1]')[0]
         # TODO add cleaning string
@@ -231,12 +266,10 @@ class Hotel(AbstractPlace):
         self.ID = str(_tmp[0].xpath('@data-locid')[0])
         self.json = json.loads(self.parser.xpath('//script[@type="application/ld+json"]//text()')[0])
         if len(_tmp) > 0:
-            self.address.parse(_tmp[0])
-            self.contacts.parse(_tmp, d_id=self.ID)
-        print('fine')
-
-
-# https://www.tripadvisor.com/ShowUrl?&excludeFromVS=true&odc=MobileBusinessListingsUrl&d=543462&url=1
+            self.address.parse(_tmp[0], link=self.url)
+            # self.contacts.parse(_tmp, d_id=self.ID)
+        # TODO after all data parsing we MUST DELETE HTML-Element from class instance, otherwise is F8cking errors
+        self.parser = ''
 
 
 class Hotels(PlacesType):
@@ -244,6 +277,7 @@ class Hotels(PlacesType):
     Specific class for hotel entity
     """
     links = []
+    data = []
 
     def collect_links(self):
         """
@@ -253,6 +287,26 @@ class Hotels(PlacesType):
         # Start crawling MAIN-PAGE HTML page about required location:
         print("Downloading HOTELS search results page")
         self._get()
+
+    def collect_data(self):
+        """
+        Function for collecting data from provided list of links
+        :return:
+        """
+        download_start = time.time()
+        agents = 8
+        chunksize = 1
+        # with multiprocessing.Pool() as pool:
+        #     for it in tqdm(pool.imap_unordered(get_hotel, self.links, chunksize)):
+        #         self.data.append(it)
+        # Sequence execution: 1.3s per one hotel item
+        # for it in tqdm(self.links):
+        #     self.data.append(get_hotel(it))
+        # TODO find balance for network bandwidth and CPU performance
+        p = Pool(128)
+        self.data = p.map(get_hotel, self.links)
+        download_end = time.time()
+        print("Finish crawling:", download_end - download_start, ' s')
 
     def _get(self):
         """

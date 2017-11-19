@@ -135,6 +135,7 @@ def main_page(query):
                                                   numbers=_numbers,
                                                   r_num=_r_num)
     RESULT['HOTELS'].collect_links()
+    RESULT['HOTELS'].collect_data()
     download_end = time.time()
     print("Finish crawling MAIN page: ", download_end - download_start, ' s')
     return RESULT
