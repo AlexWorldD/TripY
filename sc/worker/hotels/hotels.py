@@ -58,7 +58,7 @@ def get_value(it):
     return it[0] if len(it) > 0 else ''
 
 
-def get_web(it, d_id):
+def get_web(it, d_id, link):
     """
     Special function for getting WEB-address via HTTP-request as mobile device and parsing response headers
     :param d_id: location id, required for request to server
@@ -71,11 +71,17 @@ def get_web(it, d_id):
         'Upgrade-Insecure-Requests': '1',
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.89 Safari/537.36'
     }
-    _url = 'https://www.tripadvisor.com/ShowUrl?&excludeFromVS=true&odc=MobileBusinessListingsUrl&d=' + d_id + '&url=1'
+    _url = 'https://www.tripadvisor.com/ShowUrl?&excludeFromVS=true&odc=MobileBusinessListingsUrl&d=' + d_id + '&url='
     if len(it) > 0:
-        print('---', d_id, '---')
-        _raw_web = requests.post(url=_url, headers=_HEADERS, allow_redirects=False).headers._store['location'][1]
-        return _raw_web.split('?')[0]
+        for _t in range(4):
+            __url = _url + str(_t)
+            _r = requests.post(url=__url, headers=_HEADERS, allow_redirects=False)
+            if _r.status_code != 404:
+                try:
+                    _raw_web = _r.headers._store['location'][1]
+                    return _raw_web.split('?')[0]
+                except:
+                    print("Error! Can't get WEB!", link)
     else:
         return ''
 
@@ -157,7 +163,7 @@ class Contacts:
         self.phone = 0
         self.web = ''
 
-    def parse(self, it, d_id):
+    def parse(self, it, d_id, link=''):
         """
         Function for parsing HTML-object to splitting values
         :param it: parent HTML-object, includes the contacts information
@@ -165,9 +171,15 @@ class Contacts:
         """
         # SPEED: 330 iterations per second
         # TODO make robust for nan values or not-find DOM element
-        _st_add = get_value(it[0].xpath('./div[@class="blEntry phone"]/span/text()'))
-        self.phone = to_numbers(_st_add)
-        self.web = get_web(it[0].xpath('./div[@class="blEntry website"]/span/text()'), d_id)
+        try:
+            _st_add = get_value(it[0].xpath('./div[@class="blEntry phone"]/span/text()'))
+            self.phone = to_numbers(_st_add)
+        except:
+            print("Can't parse phone number:", link)
+        try:
+            self.web = get_web(it[0].xpath('./div[@class="blEntry website"]/span/text()'), d_id, link)
+        except:
+            print("Can't parse WEB-site:", link)
 
 
 class PlacesType:
@@ -267,7 +279,7 @@ class Hotel(AbstractPlace):
         self.json = json.loads(self.parser.xpath('//script[@type="application/ld+json"]//text()')[0])
         if len(_tmp) > 0:
             self.address.parse(_tmp[0], link=self.url)
-            # self.contacts.parse(_tmp, d_id=self.ID)
+            self.contacts.parse(_tmp, d_id=self.ID, link=self.url)
         # TODO after all data parsing we MUST DELETE HTML-Element from class instance, otherwise is F8cking errors
         self.parser = ''
 
@@ -305,6 +317,7 @@ class Hotels(PlacesType):
         # TODO find balance for network bandwidth and CPU performance
         p = Pool(128)
         self.data = p.map(get_hotel, self.links)
+        p.close()
         download_end = time.time()
         print("Finish crawling:", download_end - download_start, ' s')
 
