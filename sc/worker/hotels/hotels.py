@@ -106,6 +106,29 @@ def get_hotel_info(_hotel):
     return _hotel.collect_main_info()
 
 
+def get_links(_url):
+    # TODO ~1.3s/request
+    # TODO using with headers increase loading size 3 times: from 18k of lines to 8k.
+    # CONSTANTS
+    HEADERS = {
+        'Accept': 'text/javascript, text/html, application/xml, text/xml, */*',
+        'Accept-Encoding': 'gzip,deflate',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8',
+        'Host': 'www.tripadvisor.com',
+        'Pragma': 'no-cache',
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.89 Safari/537.36'
+        # 'X-Requested-With': 'XMLHttpRequest'
+    }
+    COOKIES = {"SetCurrency": "USD"}
+    page_response = requests.get(url=_url, headers=HEADERS, cookies=COOKIES).text
+    parser = html.fromstring(page_response)
+    return parser.xpath(
+        '//div[contains(@class,"hasDates")]/div[contains(@class,"prw_meta_hsx")]/div[@class="listing"]//div[@class="listing_title"]/a/@href')
+
+
 class Address:
     """
     Simple structure for address entity: country, city, street and et al.
@@ -306,7 +329,7 @@ class Hotels(PlacesType):
         :return:
         """
         download_start = time.time()
-        agents = 8
+        agents = 6
         chunksize = 1
         # with multiprocessing.Pool() as pool:
         #     for it in tqdm(pool.imap_unordered(get_hotel, self.links, chunksize)):
@@ -333,11 +356,22 @@ class Hotels(PlacesType):
         except:
             print("Can't split URL:", self.url, " to 2 parts!")
         _parts = self.numbers // 30 + 1
-        for it in tqdm(range(_parts)):
-            _part_url = _link_l + '-oa' + str(it * 30) + '-' + _link_r
-            # TODO ~1.3s/request
-            # TODO using with headers increase loading size 3 times: from 18k of lines to 8k.
-            page_response = requests.get(url=_part_url, headers=self.HEADERS, cookies=self.COOKIES).text
-            parser = html.fromstring(page_response)
-            self.links.extend(parser.xpath(
-                '//div[contains(@class,"hasDates")]/div[contains(@class,"prw_meta_hsx")]/div[@class="listing"]//div[@class="listing_title"]/a/@href'))
+        # Parallel version:
+        _part_url = []
+        for it in range(_parts):
+            _part_url.append(_link_l + '-oa' + str(it * 30) + '-' + _link_r)
+        agents = 8
+        chunksize = 1
+        with multiprocessing.Pool() as pool:
+            for it in tqdm(pool.imap_unordered(get_links, _part_url, chunksize)):
+                self.links.extend(it)
+            pool.close()
+        # 1 thread:
+        # for it in tqdm(range(_parts)):
+        #     _part_url = _link_l + '-oa' + str(it * 30) + '-' + _link_r
+        #     # TODO ~1.3s/request
+        #     # TODO using with headers increase loading size 3 times: from 18k of lines to 8k.
+        #     page_response = requests.get(url=_part_url, headers=self.HEADERS, cookies=self.COOKIES).text
+        #     parser = html.fromstring(page_response)
+        #     self.links.extend(parser.xpath(
+        #         '//div[contains(@class,"hasDates")]/div[contains(@class,"prw_meta_hsx")]/div[@class="listing"]//div[@class="listing_title"]/a/@href'))
