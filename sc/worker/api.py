@@ -135,35 +135,7 @@ def main_page(query):
                                                   numbers=_numbers,
                                                   r_num=_r_num)
     RESULT['HOTELS'].collect_links()
+    RESULT['HOTELS'].collect_data()
     download_end = time.time()
     print("Finish crawling MAIN page: ", download_end - download_start, ' s')
     return RESULT
-
-
-def hotels_page(url='https://www.tripadvisor.ru/Hotels-g298507-St_Petersburg_Northwestern_District-Hotels.html',
-                referer='https://www.tripadvisor.ru'):
-    """
-    Special function for crawling data about Hotels form search queue
-    :param url: link to the 1st page of search result
-    :param referer: link to previous page which is necessary for correct server response
-    :return:
-    """
-    HEADERS['Referer'] = referer
-    # Start crawling MAIN-PAGE HTML page about required location:
-    print("Downloading HOTELS search results page")
-    # TODO ~1.3s/request
-    # TODO using with headers increase loading size 3 times: from 18k of lines to 8k.
-    page_response = requests.get(url=url, headers=HEADERS, cookies=COOKIES).text
-    # page_response = requests.post(url=url).text
-    # with codecs.open('hotels_OA30.html', 'w', 'utf-8-sig') as file:
-    #     file.write(page_response)
-    # urllib.request.urlretrieve(url, 'hotels2.html') # Test downloading page for visual comparing.
-    # print(page_response)
-    parser = html.fromstring(page_response)
-    # 30 Hotels per page:
-    # //*[@id="taplc_hsx_hotel_list_dusty_hotels_combined_sponsored_0"]/div[2]/div/div[1]/div[2]/div[1]/div
-    hotel_lists = parser.xpath(
-        '//div[contains(@class,"hasDates")]/div[contains(@class,"prw_meta_hsx")]/div[@class="listing"]//div[@class="listing_title"]/a/@href')
-    print(hotel_lists)
-
-#   prw_rup
