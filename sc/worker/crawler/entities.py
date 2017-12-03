@@ -215,6 +215,7 @@ class Restaurant(Entity):
         self.download()
         self.title = check(self.parser, '//h1[@id="HEADING"]/text()')
         print('title: %s' %self.title)
+        self.parser = ''
 
 class Attraction(Entity):
     """
@@ -231,3 +232,4 @@ class Attraction(Entity):
         self.download()
         self.title = check(self.parser, '//h1[@id="HEADING"]/text()')
         print('title: %s' %self.title)
+        self.parser = ''

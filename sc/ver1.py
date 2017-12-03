@@ -14,6 +14,7 @@ if __name__ == '__main__':
     out = open('output.json', 'w')
     for hotel in result['HOTELS']:
         d = {
+            'type': 'hotel',
             'title': hotel.title,
             'address': hotel.address.__dict__,
             'contacts': hotel.contacts.__dict__,
@@ -25,11 +26,13 @@ if __name__ == '__main__':
         
     for restaurant in result['RESTAURANTS']:
         d = {
+            'type': 'restaurant',
             'title': restaurant.title }
         json.dump(d, out, indent = 4)
         
     for attraction in result['ATTRACTIONS']:
         d = {
+            'type': 'attraction',
             'title': attraction.title }
         json.dump(d, out, indent = 4)
     print('fine')
