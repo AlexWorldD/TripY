@@ -22,4 +22,14 @@ if __name__ == '__main__':
             'rating': hotel.avg_rating,
             'count': hotel.reviews_count }
         json.dump(d, out, indent = 4)
+        
+    for restaurant in result['RESTAURANTS']:
+        d = {
+            'title': restaurant.title }
+        json.dump(d, out, indent = 4)
+        
+    for attraction in result['ATTRACTIONS']:
+        d = {
+            'title': attraction.title }
+        json.dump(d, out, indent = 4)
     print('fine')

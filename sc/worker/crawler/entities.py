@@ -1,4 +1,5 @@
 import requests
+import json
 from lxml import html
 from abc import ABC, abstractmethod
 from tqdm import tqdm
@@ -47,6 +48,10 @@ def get_web(it, d_id, link):
                     print("Error! Can't get WEB!", link)
     else:
         return ''
+
+def check(root, query):
+    tmp = root.xpath(query)
+    return tmp[0] if len(tmp) > 0 else ''
 
 class Address:
     """
@@ -165,3 +170,64 @@ class Entity(ABC):
     @abstractmethod
     def collect_main_info(self):
         pass
+
+class Hotel(Entity):
+    """
+    Entity for Hotel
+    """
+    link_path = '//div[contains(@class,"hasDates")]/div[contains(@class,"prw_meta_hsx")]/div[@class="listing"]//div[@class="listing_title"]/a/@href'
+    # link_path = '//div[@class="listing_title"]/a/@href'
+    
+    def collect_main_info(self):
+        self.download()
+        # print('Collecting main info')
+        # TODO try to use hierarchical parsing
+        # _parser_header = self.parser.xpath('//*[@id="taplc_hr_atf_north_star_nostalgic_0"]/div[1]')[0]
+        # TODO add cleaning string
+        # test_parsing(self.parser, '//h1[@id="HEADING"]/text()')
+        # TODO add choosing of relative vs. absolute xPaths
+        # self.title = self.parser.xpath("/html/body[@id='BODY_BLOCK_JQUERY_REFLOW']/div[@id='PAGE']/div[@id='taplc_hr_atf_north_star_nostalgic_0']/div[@class='atf_header_wrapper']/div[@class='atf_header ui_container is-mobile full_width']/div[@id='taplc_location_detail_header_hotels_0']/h1[@id='HEADING']/text()")
+        
+        self.title = check(self.parser, '//h1[@id="HEADING"]/text()')
+        print('title: %s' %self.title)
+        _tmp = self.parser.xpath(
+            "/html/body[@id='BODY_BLOCK_JQUERY_REFLOW']/div[@id='PAGE']/div[@id='taplc_hr_atf_north_star_nostalgic_0']/div[@class='atf_header_wrapper']/div[@class='atf_header ui_container is-mobile full_width']/div[@id='taplc_location_detail_header_hotels_0']/div[@class='prw_rup prw_common_atf_header_bl headerBL']/div[@class='blRow']")
+        _tmp = _tmp if len(_tmp) > 0 else self.parser.xpath('//div[@class="blRow"]')
+        self.ID = str(_tmp[0].xpath('@data-locid')[0])
+        data = json.loads(self.parser.xpath('//script[@type="application/ld+json"]//text()')[0])
+        self.prices = data['priceRange'] if 'priceRange' in data else '???'
+        self.avg_rating = data['aggregateRating']['ratingValue'] if 'aggregateRating' in data else '???'
+        self.reviews_count = data['aggregateRating']['reviewCount']  if 'aggregateRating' in data else '???'
+        if len(_tmp) > 0:
+            self.address.parse(_tmp[0], link=self.url)
+            self.contacts.parse(_tmp[0], d_id=self.ID, link=self.url)
+        # TODO after all data parsing we MUST DELETE HTML-Element from class instance, otherwise is F8cking errors
+        self.parser = ''
+
+class Restaurant(Entity):
+    """
+    Entity for Restaurant
+    """
+
+    link_path = '//a[@class="property_title"]/@href'
+    
+    def collect_main_info(self):
+        self.download()
+        self.title = check(self.parser, '//h1[@id="HEADING"]/text()')
+        print('title: %s' %self.title)
+
+class Attraction(Entity):
+    """
+    Entity for Attraction
+    """
+    
+    #link_path = "body/div[@id='PAGE']/div[@id='MAINWRAP']/div[@id='MAIN']/div[@id='BODYCON']/div[@id='ATTRACTIONS_NARROW']\
+    #    /div[@id='AL_LIST_CONTAINER']/div[@id='FILTERED_LIST']/div[@id='ATTR_ENTRY_']/div[@class='attraction_clarity_cell']/div[@class='listing']/\
+    #    div[@class='listing_details']/div[@class='listing_info']/div[@class='listing_title ']/a/@href"
+    
+    link_path = '//div[@class="listing_title "]/a/@href'
+    
+    def collect_main_info(self):
+        self.download()
+        self.title = check(self.parser, '//h1[@id="HEADING"]/text()')
+        print('title: %s' %self.title)

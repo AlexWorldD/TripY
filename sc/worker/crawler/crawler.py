@@ -45,7 +45,8 @@ class Crawler:
         else:
             print('bad response code: %d' %page_response.status_code)
             return
-        return parser.xpath('//div[contains(@class,"hasDates")]/div[contains(@class,"prw_meta_hsx")]/div[@class="listing"]//div[@class="listing_title"]/a/@href')
+        # return parser.xpath('//div[contains(@class,"hasDates")]/div[contains(@class,"prw_meta_hsx")]/div[@class="listing"]//div[@class="listing_title"]/a/@href')
+        return parser.xpath(self.entity_crawler.link_path)
 
     def get_entity(self, url):
         entity = self.entity_crawler(url = url)
@@ -69,7 +70,6 @@ class Crawler:
         _part_url = []
         for it in range(_parts):
             _part_url.append(_link_l + '-oa' + str(it * 30) + '-' + _link_r)
-        agents = 8
         chunksize = 1
         with multiprocessing.Pool() as pool:
             for it in tqdm(pool.imap_unordered(self.get_links, _part_url, chunksize)):
@@ -82,7 +82,6 @@ class Crawler:
         :return:
         """
         download_start = time.time()
-        agents = 6
         chunksize = 1
         # with multiprocessing.Pool() as pool:
         #     for it in tqdm(pool.imap_unordered(get_hotel, self.links, chunksize)):
@@ -91,9 +90,11 @@ class Crawler:
         # for it in tqdm(self.links):
         #     self.data.append(get_hotel(it))
         # TODO find balance for network bandwidth and CPU performance
-        p = Pool(12)
-        self.data = p.map(self.get_entity, self.links)
-        p.close()
+
+        with multiprocessing.Pool(16) as pool:
+            self.data = pool.map(self.get_entity, self.links)
+            pool.close()
+                
         download_end = time.time()
         print("Finished crawling:", download_end - download_start, ' s')
 
