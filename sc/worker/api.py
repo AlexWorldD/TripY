@@ -14,6 +14,13 @@ import multiprocessing
 from tqdm import tqdm, tqdm_pandas
 from worker.hotels import *
 
+import os, sys
+sys.path.insert(0, os.path.abspath(".."))
+
+from crawler import Crawler, HEADERS, COOKIES
+from hotel import Hotel
+
+'''
 # CONSTANTS
 HEADERS = {
     'Accept': 'text/javascript, text/html, application/xml, text/xml, */*',
@@ -29,7 +36,7 @@ HEADERS = {
 }
 
 COOKIES = {"SetCurrency": "USD"}
-
+'''
 try:
     from lxml import html, etree
 except:
@@ -119,7 +126,7 @@ def main_page(query):
     RESULT['Description'] = _descr[0][1:-1] if len(_descr) > 0 else ''
     # Specify all possible places for city
     # possible_types = ['hotels', 'flights', 'attractions', 'restaurants', 'vacationRentals', 'forum']
-    possible_types = {'hotels': Hotels}
+    possible_types = {'hotels': Hotel}
     for key in possible_types:
         # TODO test different xpathes and there performance
         XPATH_URL = parser.xpath(
@@ -131,11 +138,21 @@ def main_page(query):
         _url = XPATH_URL[0] if len(XPATH_URL) > 0 else ''
         _numbers = to_numbers(XPATH_NUMBERS[0]) if len(XPATH_NUMBERS) else 0
         _r_num = to_numbers(XPATH_REVIEW_NUMBERS[0]) if len(XPATH_REVIEW_NUMBERS) else 0
+        '''
         RESULT[key.upper()] = possible_types[key](url=_url,
                                                   numbers=_numbers,
                                                   r_num=_r_num)
-    RESULT['HOTELS'].collect_links()
-    RESULT['HOTELS'].collect_data()
+        '''
+        crawler = Crawler(url=_url,
+                          numbers=_numbers,
+                          r_num=_r_num,
+                          crawler=possible_types[key])
+        crawler.collect_links()
+        crawler.collect_data()
+        RESULT[key.upper()] = crawler.data
+        
+    # RESULT['HOTELS'].collect_links()
+    # RESULT['HOTELS'].collect_data()
     download_end = time.time()
     print("Finish crawling MAIN page: ", download_end - download_start, ' s')
     return RESULT
