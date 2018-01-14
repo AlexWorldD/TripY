@@ -1,7 +1,7 @@
 import time
 import requests
 from lxml import html, etree
-from abc import ABC, abstractmethod
+# from abc import ABC, abstractmethod
 from tqdm import tqdm
 import re
 import multiprocessing
@@ -28,14 +28,16 @@ class Crawler:
     Base structure for entities such as Hotels/Restaurants and et. al.
     Includes common info such as link and numbers of that entity.
     """
-    def __init__(self, url='', numbers=0, r_num=0, crawler=None):
+    def __init__(self, url = '', numbers = 0, r_num = 0, path = '', entity = None):
         """Create class represents specific entity for city"""
         self.url = 'https://www.tripadvisor.ru' + url
         self.numbers = numbers
         self.reviews_number = r_num
         self.links = []
         self.data = []
-        self.entity_crawler = crawler #entity_crawler var contains a constructor of specific entity crawler
+        self.path = path
+        self.entity_constructor = entity;
+        # self.entity_crawler = crawler #entity_crawler var contains a constructor of specific entity crawler
 	
     def get_links(self, url):
         page_response = requests.get(url=url, headers=HEADERS, cookies=COOKIES)
@@ -46,10 +48,11 @@ class Crawler:
             print('bad response code: %d' %page_response.status_code)
             return
         # return parser.xpath('//div[contains(@class,"hasDates")]/div[contains(@class,"prw_meta_hsx")]/div[@class="listing"]//div[@class="listing_title"]/a/@href')
-        return parser.xpath(self.entity_crawler.link_path)
+        return parser.xpath(self.path)
 
     def get_entity(self, url):
-        entity = self.entity_crawler(url = url)
+        # entity = self.entity_crawler(url = url)
+        entity = self.entity_constructor(url = url)
         entity.collect_main_info()
         return entity
         
@@ -93,8 +96,9 @@ class Crawler:
 
         with multiprocessing.Pool(16) as pool:
             self.data = pool.map(self.get_entity, self.links)
+            self.data = [entry for entry in self.data if entry is not None]
             pool.close()
                 
         download_end = time.time()
         print("Finished crawling:", download_end - download_start, ' s')
-
+        

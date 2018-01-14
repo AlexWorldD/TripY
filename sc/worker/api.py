@@ -16,7 +16,7 @@ import os, sys
 sys.path.insert(0, os.path.abspath(".."))
 
 from .crawler.crawler import Crawler, HEADERS, COOKIES
-from .crawler.entities import Hotel, Restaurant, Attraction
+from .crawler.entities import *
 
 try:
     from lxml import html, etree
@@ -47,7 +47,9 @@ def main_page(query):
     api_response = requests.get(url).json()
     url_from_autocomplete = "http://www.tripadvisor.com" + api_response['results'][0]['url']
     print("URL for required location: ", url_from_autocomplete)
+    
     # Parsing main INFO from RESPONSE:
+    
     RESULT['GEO_ID'] = api_response['results'][0]['value']
     RESULT['Location'] = api_response['results'][0]['details']['name']
     RESULT['Country'] = api_response['results'][0]['details']['parent_name']
@@ -63,10 +65,13 @@ def main_page(query):
     # Get INFO from main page:
     XPATH_TEXT = '//*[@id="taplc_expanding_read_more_box_0"]/div/div[1]/text()'
     _descr = parser.xpath(XPATH_TEXT)
+    
     RESULT['Description'] = _descr[0][1:-1] if len(_descr) > 0 else ''
+    RESULT['Entities'] = {}
+    
     # Specify all possible places for city
-    # possible_types = ['hotels', 'flights', 'attractions', 'restaurants', 'vacationRentals', 'forum']
-    possible_types = {'hotels': Hotel, 'restaurants': Restaurant, 'attractions': Attraction}
+    possible_types = link_paths.keys();
+    # possible_types = ['hotel'];
     for key in possible_types:
         # TODO test different xpathes and there performance
         XPATH_URL = parser.xpath(
@@ -78,15 +83,18 @@ def main_page(query):
         _url = XPATH_URL[0] if len(XPATH_URL) > 0 else ''
         _numbers = to_numbers(XPATH_NUMBERS[0]) if len(XPATH_NUMBERS) else 0
         _r_num = to_numbers(XPATH_REVIEW_NUMBERS[0]) if len(XPATH_REVIEW_NUMBERS) else 0
-        crawler = Crawler(url=_url,
-                          numbers=_numbers,
-                          r_num=_r_num,
-                          crawler=possible_types[key])
+        crawler = Crawler(url = _url,
+                          numbers = _numbers,
+                          r_num = _r_num,
+                          path = link_paths[key],
+                          entity = Entity)
+                          # crawler=possible_types[key])
         crawler.collect_links()
         print('%d links collected' %len(crawler.links))
         crawler.collect_data()
-        RESULT[key.upper()] = crawler.data
+        RESULT['Entities'][key + 's'] = [entity.dictify() for entity in crawler.data]
         
     download_end = time.time()
     print("Finished crawling MAIN page: ", download_end - download_start, ' s')
+    
     return RESULT

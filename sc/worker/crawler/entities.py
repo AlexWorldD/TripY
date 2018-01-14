@@ -1,12 +1,12 @@
 import requests
 import json
 from lxml import html
-from abc import ABC, abstractmethod
+# from abc import ABC, abstractmethod
 from tqdm import tqdm
 import re
 import multiprocessing
-from crawler import HEADERS, COOKIES
-from pathos.multiprocessing import ProcessingPool as Pool
+from .crawler import HEADERS, COOKIES
+# from pathos.multiprocessing import ProcessingPool as Pool
 
 def get_value(it):
     """
@@ -52,7 +52,7 @@ def get_web(it, d_id, link):
 def check(root, query):
     tmp = root.xpath(query)
     return tmp[0] if len(tmp) > 0 else ''
-
+'''
 class Address:
     """
     Simple structure for address entity: country, city, street and et al.
@@ -107,7 +107,7 @@ class Address:
             self.country = str(it.xpath('./div/span[@class="country-name"]/text()')[0])
         except:
             print("Can't parse country:", link)
-
+'''
 class Contacts:
     """
     Simple structure for available contacts for entity
@@ -140,21 +140,24 @@ class Contacts:
             self.web = get_web(it[0].xpath('./div[@class="blEntry website"]/span/text()'), d_id, link)
         except:
             print("Can't parse WEB-site:", link)
-            
-class Entity(ABC):
-    """
-    Abstract class for THE Hotel/Restaurant and et. al.
-    Includes common info such as link, address, rating and etc.
-    """
 
-    def __init__(self, url=''):
-        """Abstract initialisation for class"""
+link_paths = {
+    'hotel': '//div[contains(@class,"hasDates")]/div[contains(@class,"prw_meta_hsx")]/div[@class="listing"]//div[@class="listing_title"]/a/@href',
+    'attraction': '//div[@class="listing_title "]/a/@href',
+    'restaurant': '//a[@class="property_title"]/@href'
+}
+
+class Entity():
+    def __init__(self, url = ''):
         self.url = 'https://www.tripadvisor.ru' + url
-        super(Entity, self).__init__()
+        self.type = ''
         self.title = ''
-        self.address = Address()
-        self.contacts = Contacts()
         self.ID = None
+        self.address = {}
+        self.contacts = Contacts()
+        self.prices = ''
+        self.avg_rating = 0
+        self.reviews_count = 0
 
     def download(self):
         """
@@ -167,69 +170,47 @@ class Entity(ABC):
         else:
             print('bad response code: %d' %page_response.status_code)
 
-    @abstractmethod
-    def collect_main_info(self):
-        pass
-
-class Hotel(Entity):
-    """
-    Entity for Hotel
-    """
-    link_path = '//div[contains(@class,"hasDates")]/div[contains(@class,"prw_meta_hsx")]/div[@class="listing"]//div[@class="listing_title"]/a/@href'
-    # link_path = '//div[@class="listing_title"]/a/@href'
-    
     def collect_main_info(self):
         self.download()
-        # print('Collecting main info')
-        # TODO try to use hierarchical parsing
-        # _parser_header = self.parser.xpath('//*[@id="taplc_hr_atf_north_star_nostalgic_0"]/div[1]')[0]
-        # TODO add cleaning string
-        # test_parsing(self.parser, '//h1[@id="HEADING"]/text()')
-        # TODO add choosing of relative vs. absolute xPaths
-        # self.title = self.parser.xpath("/html/body[@id='BODY_BLOCK_JQUERY_REFLOW']/div[@id='PAGE']/div[@id='taplc_hr_atf_north_star_nostalgic_0']/div[@class='atf_header_wrapper']/div[@class='atf_header ui_container is-mobile full_width']/div[@id='taplc_location_detail_header_hotels_0']/h1[@id='HEADING']/text()")
+
+        title = check(self.parser, '//h1[@id="HEADING"]/text()')
+        print("Parsing '%s' . . . " %title, end = '')
         
-        self.title = check(self.parser, '//h1[@id="HEADING"]/text()')
-        print('title: %s' %self.title)
-        _tmp = self.parser.xpath(
-            "/html/body[@id='BODY_BLOCK_JQUERY_REFLOW']/div[@id='PAGE']/div[@id='taplc_hr_atf_north_star_nostalgic_0']/div[@class='atf_header_wrapper']/div[@class='atf_header ui_container is-mobile full_width']/div[@id='taplc_location_detail_header_hotels_0']/div[@class='prw_rup prw_common_atf_header_bl headerBL']/div[@class='blRow']")
-        _tmp = _tmp if len(_tmp) > 0 else self.parser.xpath('//div[@class="blRow"]')
-        self.ID = str(_tmp[0].xpath('@data-locid')[0])
-        data = json.loads(self.parser.xpath('//script[@type="application/ld+json"]//text()')[0])
-        self.prices = data['priceRange'] if 'priceRange' in data else '???'
-        self.avg_rating = data['aggregateRating']['ratingValue'] if 'aggregateRating' in data else '???'
-        self.reviews_count = data['aggregateRating']['reviewCount']  if 'aggregateRating' in data else '???'
-        if len(_tmp) > 0:
-            self.address.parse(_tmp[0], link=self.url)
-            self.contacts.parse(_tmp[0], d_id=self.ID, link=self.url)
-        # TODO after all data parsing we MUST DELETE HTML-Element from class instance, otherwise is F8cking errors
-        self.parser = ''
+        # self.ID = str(_tmp[0].xpath('@data-locid')[0])
+        _json = self.parser.xpath('//script[@type="application/ld+json"]//text()')
 
-class Restaurant(Entity):
-    """
-    Entity for Restaurant
-    """
+        if len(_json) > 0:
+            print('Succeeded')
+                
+            _json = json.loads(_json[0])
+            
+            self.type =  _json['@type']
+            self.title = _json['name']
+            
+            self.address['country'] = _json['address']['addressCountry']['name'] 
+            self.address['region'] = _json['address']['addressRegion'] 
+            self.address['locality'] = _json['address']['addressLocality'] 
+            self.address['street_full'] = _json['address']['streetAddress'] 
+            self.address['postal_code'] = _json['address']['postalCode'] 
 
-    link_path = '//a[@class="property_title"]/@href'
-    
-    def collect_main_info(self):
-        self.download()
-        self.title = check(self.parser, '//h1[@id="HEADING"]/text()')
-        print('title: %s' %self.title)
+            self.prices = _json['priceRange'] if 'priceRange' in _json else ''
+            self.avg_rating = _json['aggregateRating']['ratingValue'] if 'aggregateRating' in _json else ''
+            self.reviews_count = _json['aggregateRating']['reviewCount'] if 'aggregateRating' in _json else ''
+            
+            self.url = _json['url']
+        else:
+            print('Failed')
         self.parser = ''
-
-class Attraction(Entity):
-    """
-    Entity for Attraction
-    """
     
-    #link_path = "body/div[@id='PAGE']/div[@id='MAINWRAP']/div[@id='MAIN']/div[@id='BODYCON']/div[@id='ATTRACTIONS_NARROW']\
-    #    /div[@id='AL_LIST_CONTAINER']/div[@id='FILTERED_LIST']/div[@id='ATTR_ENTRY_']/div[@class='attraction_clarity_cell']/div[@class='listing']/\
-    #    div[@class='listing_details']/div[@class='listing_info']/div[@class='listing_title ']/a/@href"
-    
-    link_path = '//div[@class="listing_title "]/a/@href'
-    
-    def collect_main_info(self):
-        self.download()
-        self.title = check(self.parser, '//h1[@id="HEADING"]/text()')
-        print('title: %s' %self.title)
-        self.parser = ''
+    def dictify(self):
+        return {
+            'type': self.type,
+            'title': self.title,
+            'url': self.url,
+            'id': self.ID,
+            'address': dict(self.address),
+            'contacts': self.contacts.__dict__,
+            'prices': self.prices,
+            'avg_rating': self.avg_rating,
+            'reviews_count': self.reviews_count
+        }
