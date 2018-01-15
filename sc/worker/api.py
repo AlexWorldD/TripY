@@ -71,7 +71,6 @@ def main_page(query):
     
     # Specify all possible places for city
     possible_types = link_paths.keys();
-    # possible_types = ['hotel'];
     for key in possible_types:
         # TODO test different xpathes and there performance
         XPATH_URL = parser.xpath(
