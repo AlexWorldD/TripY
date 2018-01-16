@@ -1,12 +1,8 @@
 import requests
-import json
 from lxml import html
-# from abc import ABC, abstractmethod
-from tqdm import tqdm
+import json
 import re
-import multiprocessing
 from .crawler import HEADERS, COOKIES
-# from pathos.multiprocessing import ProcessingPool as Pool
 
 def get_value(it):
     """
@@ -52,62 +48,7 @@ def get_web(it, d_id, link):
 def check(root, query):
     tmp = root.xpath(query)
     return tmp[0] if len(tmp) > 0 else ''
-'''
-class Address:
-    """
-    Simple structure for address entity: country, city, street and et al.
-    """
-	
-    def __init__(self):
-        """Create class represents specific entity for city"""
-        self.zip = 0
-        self.country = ''
-        self.city = ''
-        self.street = ''
-        self.extended = ''
-        self.building = ''
-	
-    def print(self):
-        print('Address:')
-        print('    ZIP code: %d' %self.zip)
-        print('    Country: %s' %self.country)
-        print('    City: %s' %self.city)
-        print('    Street: %s' %self.street)
-        print('    Extended: %s' %self.extended)
-        print('    Building: %s' %self.building)	
-	
-    def parse(self, it, link=''):
-        """
-        Function for parsing HTML-object to splitting values
-        :param it: parent HTML-object, includes the address information
-        :return:
-        """
-        # SPEED: 330 iterations per second
-        # TODO make robust for nan values or not-find DOM element
-        _st_add = ''
-        try:
-            _st_add = it.xpath('./div/span[@class="street-address"]/text()')[0].split(',')
-        except IndexError:
-            print("Can't parse street address: ", link)
-        _l = len(_st_add)
-        self.street = _st_add[0] if _l > 0 else ''
-        self.building = _st_add[1] if _l > 1 else ''
-        self.extended = str(get_value(it.xpath('./div/span[@class="extended-address"]/text()')))
-        address = it.xpath('div[1]/span[@class="locality"]/text()')[0]
 
-        try:
-            self.zip = int(''.join(re.findall("\d+", address)))
-        except:
-            print("Can't parse ZIP:", link)
-        try:
-            self.city = ''.join(re.findall("\D+\\b", address))[0:-1]
-        except:
-            print("Can't parse city:", link)
-        try:
-            self.country = str(it.xpath('./div/span[@class="country-name"]/text()')[0])
-        except:
-            print("Can't parse country:", link)
-'''
 class Contacts:
     """
     Simple structure for available contacts for entity
@@ -147,17 +88,20 @@ link_paths = {
     'restaurant': '//a[@class="property_title"]/@href'
 }
 
+details_xpath = "//div[@class='highlightedAmenity detailListItem']/text()"
+
 class Entity():
     def __init__(self, url = ''):
         self.url = 'https://www.tripadvisor.ru' + url
         self.type = ''
         self.title = ''
-        self.ID = None
+        self.ID = 0
         self.address = {}
         self.contacts = Contacts()
         self.prices = ''
         self.avg_rating = 0
         self.reviews_count = 0
+        self.details = []
 
     def download(self):
         """
@@ -166,29 +110,36 @@ class Entity():
         # TODO try to modify for AJAX request, should be ~2.2 times faster
         page_response = requests.get(url=self.url, headers=HEADERS, cookies=COOKIES)
         if page_response.status_code == requests.codes.ok:
-            self.parser = html.fromstring(page_response.content)
+            return html.fromstring(page_response.content);
         else:
             print('bad response code: %d' %page_response.status_code)
 
     def collect_main_info(self):
-        self.download()
-
-        title = check(self.parser, '//h1[@id="HEADING"]/text()')
+        root = self.download()
+        if root is None:
+            return;
+		
+        title = check(root, '//h1[@id="HEADING"]/text()')
         print("Parsing '%s' . . . " %title, end = '')
         
-        # self.ID = str(_tmp[0].xpath('@data-locid')[0])
-        _json = self.parser.xpath('//script[@type="application/ld+json"]//text()')
+        # ID = root.xpath('//div[@class="blRow"]/@data-locid')
+        ID = root.xpath('//@data-locid');
+        if len(ID) > 0:
+			# Not sure if the first one is always the one we need
+            self.ID = int(ID[0])
+        
+        _json = root.xpath('//script[@type="application/ld+json"]//text()')
 
         if len(_json) > 0:
             print('Succeeded')
-                
+                        
             _json = json.loads(_json[0])
             
             self.type =  _json['@type']
             self.title = _json['name']
             
             self.address['country'] = _json['address']['addressCountry']['name'] 
-            self.address['region'] = _json['address']['addressRegion'] 
+            self.address['region'] = _json['address']['addressRegion']
             self.address['locality'] = _json['address']['addressLocality'] 
             self.address['street_full'] = _json['address']['streetAddress'] 
             self.address['postal_code'] = _json['address']['postalCode'] 
@@ -198,9 +149,11 @@ class Entity():
             self.reviews_count = _json['aggregateRating']['reviewCount'] if 'aggregateRating' in _json else ''
             
             self.url = _json['url']
+
+            self.details = root.xpath(details_xpath);
+           
         else:
             print('Failed')
-        self.parser = ''
     
     def dictify(self):
         return {
@@ -212,5 +165,6 @@ class Entity():
             'contacts': self.contacts.__dict__,
             'prices': self.prices,
             'avg_rating': self.avg_rating,
-            'reviews_count': self.reviews_count
+            'reviews_count': self.reviews_count,
+            'additional_details': list(self.details)
         }
