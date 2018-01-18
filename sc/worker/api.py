@@ -10,7 +10,6 @@ import urllib.request
 from lxml import html, etree
 import multiprocessing
 from tqdm import tqdm, tqdm_pandas
-from worker.hotels import *
 
 import os, sys
 sys.path.insert(0, os.path.abspath(".."))
@@ -26,7 +25,7 @@ except:
     print("sudo apt-get install python3-lxml")
     quit()
 
-def main_page(query):
+def main_page(query, crawl_reviews = False):
     download_start = time.time()
     RESULT = {}
     url = 'https://www.tripadvisor.ru/TypeAheadJson?action=API' \
@@ -75,6 +74,7 @@ def main_page(query):
     
     for key in possible_types:
         # TODO test different xpathes and there performance
+        RESULT['Entities'][key + 's'] = []
         XPATH_URL = parser.xpath(
             '//*[@id="BODYCON"]/div[1]/div[1]/div/div[2]/div[2]/ul/li[contains(@class,"' + key + '")]/a/@href')
         XPATH_NUMBERS = parser.xpath(
@@ -88,13 +88,18 @@ def main_page(query):
                           numbers = _numbers,
                           r_num = _r_num,
                           path = link_paths[key],
-                          entity = Entity)
-                          # crawler=possible_types[key])
+                          crawl_reviews = crawl_reviews)
+
         crawler.collect_links()
-        print('%d links collected' %len(crawler.links))
-        crawler.collect_data()
-        RESULT['Entities'][key + 's'] = [entity.dictify() for entity in crawler.data]
+        print('%d links collected' %len(crawler.data_links))
+        crawler.collect_data(Entity)
+        crawler.links = []
         
+        for entity in crawler.data:
+            if entity.review_link != '':
+                crawler.links.append(entity.review_link)
+            RESULT['Entities'][key + 's'].append(entity.dictify())
+
     download_end = time.time()
     print("Finished crawling MAIN page: ", download_end - download_start, ' s')
     

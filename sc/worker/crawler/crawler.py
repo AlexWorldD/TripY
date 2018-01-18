@@ -24,21 +24,19 @@ HEADERS = {
 COOKIES = {"SetCurrency": "USD"}
 
 class Crawler:
-    """
-    Base structure for entities such as Hotels/Restaurants and et. al.
-    Includes common info such as link and numbers of that entity.
-    """
-    def __init__(self, url = '', numbers = 0, r_num = 0, path = '', entity = None):
-        """Create class represents specific entity for city"""
+    def __init__(self, url = '', numbers = 0, r_num = 0, path = '', crawl_reviews = False):
         self.url = 'https://www.tripadvisor.ru' + url
         self.numbers = numbers
         self.reviews_number = r_num
-        self.links = []
+        
+        self.data_links = []
         self.data = []
+
         self.path = path
-        self.entity_constructor = entity;
-        # self.entity_crawler = crawler #entity_crawler var contains a constructor of specific entity crawler
-	
+        self.current_entity = None;
+
+        self.crawl_reviews = crawl_reviews
+        
     def get_links(self, url):
         page_response = requests.get(url=url, headers=HEADERS, cookies=COOKIES)
         parser = ''
@@ -51,9 +49,8 @@ class Crawler:
         return parser.xpath(self.path)
 
     def get_entity(self, url):
-        # entity = self.entity_crawler(url = url)
-        entity = self.entity_constructor(url = url)
-        entity.collect_main_info()
+        entity = self.current_entity(url = url)
+        entity.collect_main_info(self.crawl_reviews)
         return entity
         
     def collect_links(self):
@@ -76,26 +73,21 @@ class Crawler:
         chunksize = 1
         with multiprocessing.Pool() as pool:
             for it in tqdm(pool.imap_unordered(self.get_links, _part_url, chunksize)):
-                self.links.extend(it)
+                self.data_links.extend(it)
             pool.close()
             
-    def collect_data(self):
+    def collect_data(self, entity = None):
         """
         Function for collecting data from provided list of links
         :return:
         """
+        self.current_entity = entity
+        
         download_start = time.time()
         chunksize = 1
-        # with multiprocessing.Pool() as pool:
-        #     for it in tqdm(pool.imap_unordered(get_hotel, self.links, chunksize)):
-        #         self.data.append(it)
-        # Sequence execution: 1.3s per one hotel item
-        # for it in tqdm(self.links):
-        #     self.data.append(get_hotel(it))
-        # TODO find balance for network bandwidth and CPU performance
 
-        with multiprocessing.Pool(16) as pool:
-            self.data = pool.map(self.get_entity, self.links)
+        with Pool(32) as pool:
+            self.data = pool.map(self.get_entity, self.data_links)
             self.data = [entry for entry in self.data if entry is not None]
             pool.close()
                 

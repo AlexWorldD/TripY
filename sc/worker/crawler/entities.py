@@ -101,38 +101,40 @@ class Entity():
         self.prices = ''
         self.avg_rating = 0
         self.reviews_count = 0
+        self.review_link = ''
+        self.reviews = []
         self.details = []
 
-    def download(self):
+    def download(self, url = None):
         """
         Function for downloading HTML page from server to local machine.
         """
         # TODO try to modify for AJAX request, should be ~2.2 times faster
-        page_response = requests.get(url=self.url, headers=HEADERS, cookies=COOKIES)
+        if url is None:
+            url = self.url
+        
+        page_response = requests.get(url = url, headers = HEADERS, cookies = COOKIES)
         if page_response.status_code == requests.codes.ok:
             return html.fromstring(page_response.content);
         else:
             print('bad response code: %d' %page_response.status_code)
 
-    def collect_main_info(self):
+    def collect_main_info(self, crawl_reviews = False):
         root = self.download()
         if root is None:
             return;
-		
+
         title = check(root, '//h1[@id="HEADING"]/text()')
-        print("Parsing '%s' . . . " %title, end = '')
-        
-        # ID = root.xpath('//div[@class="blRow"]/@data-locid')
+        print(title)
+
         ID = root.xpath('//@data-locid');
         if len(ID) > 0:
-			# Not sure if the first one is always the one we need
+            # Not sure if the first one is always the one we need
             self.ID = int(ID[0])
-        
+
         _json = root.xpath('//script[@type="application/ld+json"]//text()')
 
         if len(_json) > 0:
-            print('Succeeded')
-                        
             _json = json.loads(_json[0])
             
             self.type =  _json['@type']
@@ -145,16 +147,49 @@ class Entity():
             self.address['postal_code'] = _json['address']['postalCode'] 
 
             self.prices = _json['priceRange'] if 'priceRange' in _json else ''
-            self.avg_rating = _json['aggregateRating']['ratingValue'] if 'aggregateRating' in _json else ''
-            self.reviews_count = _json['aggregateRating']['reviewCount'] if 'aggregateRating' in _json else ''
-            
-            self.url = _json['url']
+            self.avg_rating = float(_json['aggregateRating']['ratingValue']) if 'aggregateRating' in _json else 0
+            self.reviews_count = int(_json['aggregateRating']['reviewCount']) if 'aggregateRating' in _json else 0
 
-            self.details = root.xpath(details_xpath);
-           
-        else:
-            print('Failed')
+            if self.reviews_count > 0 and crawl_reviews:
+                review_link_path = "//div[@class='review-container'][1]/div/div/div/div[2]/div/div[1]/div[2]/a/@href"
+                review_link = root.xpath(review_link_path)
+                if len(review_link) > 0:
+                    self.review_link = 'https://www.tripadvisor.com/' + review_link[0]
+                    while self.review_link != '':
+                        review_page = self.download(self.review_link)
+                        if review_page is not None:
+                            next_page = check(review_page, "//div[@class='']/div/div/a[2]/@href")
+                            self.review_link = 'https://www.tripadvisor.com/' + next_page if next_page != '' else ''
+                            review_containers = review_page.xpath("//div[@class='reviewSelector']/div")
+                            for container in review_containers:
+                                # the first div inside the container contains a member info
+                                review = {}
+                                review['UID'] = check(container, 'div[1]/div/div/div[1]/@id')
     
+                                if len(review['UID']) > 4:
+                                    review['UID'] = (review['UID'][4:]).split('-')[0]
+                                  # 'https://www.tripadvisor.ru/MemberProfile-a_uid.' + review['UID'] -- url
+    
+                                review['user_nickname'] = check(container, 'div[1]/div/div/div[1]/div[2]/span/text()')
+                                wrap = container.xpath('div[2]/div/div[1]')
+                                if len(wrap) > 0:
+                                    wrap = wrap[0]
+                                    rating = check(wrap, 'div[1]/span[1]/@class')
+                                    review['rating']  = .1 * float(rating[-2:]) if len(rating) > 1 else ''
+                                    review['date']    = check(wrap, 'div[1]/span[2]/@title')
+                                    review['quote']   = check(wrap, 'div[2]/a/span/text()')
+                                    review['text']    = check(wrap, 'div[3]/div/p/text()')
+                                    review['ratings'] = wrap.xpath('div[4]/div/ul/li/ul/li')
+                                    for i in range(len(review['ratings'])):
+                                        rating = {}
+                                        rating['rating'] = check(review['ratings'][i], 'div[1]/@class')
+                                        rating['title'] = check(review['ratings'][i], 'div[2]/text()')
+                                        rating['rating']  = .1 * float(rating['rating'][-2:]) if len(rating['rating']) > 1 else ''
+                                        review['ratings'][i] = dict(rating)
+                                self.reviews.append(review)
+            self.url = _json['url']
+            self.details = root.xpath(details_xpath)
+
     def dictify(self):
         return {
             'type': self.type,
@@ -166,5 +201,6 @@ class Entity():
             'prices': self.prices,
             'avg_rating': self.avg_rating,
             'reviews_count': self.reviews_count,
+            'reviews': self.reviews,
             'additional_details': list(self.details)
         }
