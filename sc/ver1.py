@@ -13,3 +13,4 @@ if __name__ == '__main__':
     with open(out, 'w') as f:
         json.dump(result, f, indent=4, ensure_ascii=False)
     print('Done')
+

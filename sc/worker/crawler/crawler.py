@@ -38,7 +38,7 @@ class Crawler:
         self.links = []
         self.data = []
         self.path = path
-        self.entity_constructor = entity;
+        self.entity_constructor = entity
         # self.entity_crawler = crawler #entity_crawler var contains a constructor of specific entity crawler
 
     def get_links(self, url):

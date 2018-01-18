@@ -111,3 +111,7 @@ sc/html_tests/
 Requests2Server/
 
 sc/Test\.json
+
+sc/WEB\.json
+
+sc/output\.json
