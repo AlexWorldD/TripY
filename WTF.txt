@@ -3,3 +3,4 @@ MongoDB Installation
     sudo ufw allow 27017
     vim /etc/mongod.conf
         Comment line with 127.000
+2) git clone -b <branch> <remote_repo>
