@@ -1,0 +1,5 @@
+MongoDB Installation
+1) allow remote connection
+    sudo ufw allow 27017
+    vim /etc/mongod.conf
+        Comment line with 127.000

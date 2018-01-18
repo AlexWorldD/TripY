@@ -87,14 +87,6 @@ class Crawler:
         :return:
         """
         download_start = time.time()
-        chunksize = 1
-        # with multiprocessing.Pool() as pool:
-        #     for it in tqdm(pool.imap_unordered(get_hotel, self.links, chunksize)):
-        #         self.data.append(it)
-        # Sequence execution: 1.3s per one hotel item
-        # for it in tqdm(self.links):
-        #     self.data.append(get_hotel(it))
-        # TODO find balance for network bandwidth and CPU performance
 
         with multiprocessing.Pool(16) as pool:
             self.data = pool.map(self.get_entity, self.links)

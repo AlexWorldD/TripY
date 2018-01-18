@@ -3,6 +3,14 @@ from lxml import html
 import json
 import re
 from .crawler import HEADERS, COOKIES
+from pymongo import MongoClient
+from pprint import pprint
+
+client = MongoClient('mongodb://159.65.24.67')  # change the ip and port to your mongo database's
+DB = client.test
+# serverStatusResult = db.command("serverStatus")
+# pprint(serverStatusResult)
+
 
 
 def get_value(it):
@@ -34,7 +42,8 @@ def get_web(it, d_id, link):
         'Upgrade-Insecure-Requests': '1',
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.89 Safari/537.36'
     }
-    _url = 'https://www.tripadvisor.com/ShowUrl?&excludeFromVS=true&odc=MobileBusinessListingsUrl&d=' + str(d_id) + '&url='
+    _url = 'https://www.tripadvisor.com/ShowUrl?&excludeFromVS=true&odc=MobileBusinessListingsUrl&d=' + str(
+        d_id) + '&url='
     if len(it) > 0:
         for _t in range(4):
             __url = _url + str(_t)
@@ -163,26 +172,30 @@ class Entity():
             self.address['postal_code'] = _json['address']['postalCode']
 
             self.prices = _json['priceRange'] if 'priceRange' in _json else ''
-            self.avg_rating = _json['aggregateRating']['ratingValue'] if 'aggregateRating' in _json else ''
-            self.reviews_count = _json['aggregateRating']['reviewCount'] if 'aggregateRating' in _json else ''
+            self.avg_rating = _json['aggregateRating']['ratingValue'] if 'aggregateRating' in _json else -1
+            self.reviews_count = _json['aggregateRating']['reviewCount'] if 'aggregateRating' in _json else -1
 
             self.url = _json['url']
 
-            self.details = root.xpath(details_xpath);
+            self.details = root.xpath(details_xpath)
 
         else:
             print('Failed')
 
     def dictify(self):
-        return {
+        res = {
             'type': self.type,
             'title': self.title,
             'url': self.url,
-            'id': self.ID,
+            '_id': int(self.ID),
             'address': dict(self.address),
             'contacts': self.contacts.__dict__,
             'prices': self.prices,
-            'avg_rating': self.avg_rating,
-            'reviews_count': self.reviews_count,
+            'avg_rating': float(self.avg_rating),
+            'reviews_count': int(self.reviews_count),
             'additional_details': list(self.details)
         }
+        # TODO require auto selection of collection for insert
+        DB.hotels.insert_one(res)
+        # del res['_id']
+        return res
