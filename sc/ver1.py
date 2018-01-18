@@ -1,10 +1,10 @@
 import json
 import sys
 import worker.api as worker
-
+from pymongo import MongoClient
 if __name__ == '__main__':
-    # query = sys.argv[1] if len(sys.argv) > 1 else 'Санкт'
-    # out = sys.argv[2] if len(sys.argv) > 2 else 'output.json'
+    query = sys.argv[1] if len(sys.argv) > 1 else 'Санкт'
+    out = sys.argv[2] if len(sys.argv) > 2 else 'output.json'
         
     query = input('Please enter a city: ')
     out = input('Please enter filename: ')
