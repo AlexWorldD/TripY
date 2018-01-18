@@ -8,7 +8,8 @@ if __name__ == '__main__':
         
     query = input('Please enter a city: ')
     out = input('Please enter filename: ')
-    out = open(out if len(out) > 0 else 'output.json', 'w')
+    out = out if len(out) > 0 else 'output.json'
     result = worker.main_page(query if len(query) > 0 else 'Санкт')
-    json.dump(result, out, indent = 4)
+    with open(out, 'w') as f:
+        json.dump(result, f, indent=4, ensure_ascii=False)
     print('Done')
