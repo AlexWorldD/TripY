@@ -70,8 +70,8 @@ def main_page(query, crawl_reviews = False):
     
     # Specify all possible places for city
 
-    # possible_types = link_paths.keys()
-    possible_types = ['hotel'] # for testing
+    possible_types = link_paths.keys()
+    # possible_types = ['hotel'] # for testing
 
     users = {}
     
