@@ -165,15 +165,21 @@ class Entity():
                             for container in review_containers:
                                 # the first div inside the container contains a member info
                                 review = {}
-                                review['UID'] = check(container, 'div[1]/div/div/div[1]/@id')
+                                user_id = check(container, 'div[1]/div/div/div[1]/@id')
+                                user_nickname = check(container, 'div[1]/div/div/div[1]/div[2]/span/text()')
 
-                                if len(review['UID']) > 4:
-                                    review['UID'] = (review['UID'][4:]).split('-')[0]
+                                if len(user_id) > 4:
+                                    user_id = user_id[4:].split('-')[0]
 
-                                    if not review['UID'] in self.visitors:
-                                        self.visitors[review['UID']] = 'https://www.tripadvisor.ru/MemberProfile-a_uid.' + review['UID']
-
-                                review['user_nickname'] = check(container, 'div[1]/div/div/div[1]/div[2]/span/text()')
+                                    if not user_id in self.visitors:
+                                        self.visitors[user_id] = {
+                                            'nickname': user_nickname,
+                                            'url': 'https://www.tripadvisor.ru/MemberProfile-a_uid.' + user_id
+                                        }
+                                        
+                                review['UID'] = user_id
+                                review['user_nickname'] = user_nickname
+                                
                                 wrap = container.xpath('div[2]/div/div[1]')
                                 if len(wrap) > 0:
                                     wrap = wrap[0]

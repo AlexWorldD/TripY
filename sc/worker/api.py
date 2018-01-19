@@ -70,8 +70,8 @@ def main_page(query, crawl_reviews = False):
     
     # Specify all possible places for city
 
-    possible_types = link_paths.keys()
-    # possible_types = ['hotel'] # for testing
+    # possible_types = link_paths.keys()
+    possible_types = ['hotel'] # for testing
 
     users = {}
     
@@ -103,10 +103,10 @@ def main_page(query, crawl_reviews = False):
                 crawler.links.append(entity.review_link)
             for ID in entity.visitors:
                 if not ID in users:
-                    users[ID] = entity.visitors[ID]
+                    users[ID] = dict(entity.visitors[ID])
             RESULT['Entities'][key + 's'].append(entity.dictify())
 
-    print('\nGot %d users\n' %len(users.keys()))
+    # print(users)
     
     download_end = time.time()
     print("Finished crawling MAIN page: ", download_end - download_start, ' s')
