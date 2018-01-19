@@ -63,8 +63,8 @@ def main_page(query):
     RESULT['Description'] = _descr[0][1:-1] if len(_descr) > 0 else ''
 
     # Specify all possible places for city
-    # possible_types = link_paths.keys()
-    possible_types = ['hotel']  # for testing
+    possible_types = link_paths.keys()
+    # possible_types = ['hotel']  # for testing
 
     for key in possible_types:
         # TODO test different xpathes and there performance

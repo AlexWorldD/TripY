@@ -61,7 +61,7 @@ def main_page(query):
     # Start crawling MAIN-PAGE HTML page about required location:
     print("Downloading search results page")
     # TODO ~1.3s/request
-    page_response = requests.post(url=url_from_autocomplete).text
+    page_response = requests.post(url=url_from_autocomplete, allow_redirects=False).text
     # urllib.request.urlretrieve(url_from_autocomplete, 'test.html') # Test downloading page for visual comparing.
     parser = html.fromstring(page_response)
     # Get INFO from main page:

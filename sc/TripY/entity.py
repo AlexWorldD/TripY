@@ -139,7 +139,7 @@ class Entity():
         Function for downloading HTML page from server to local machine.
         """
         # TODO try to modify for AJAX request, should be ~2.2 times faster
-        page_response = requests.get(url=self.url, headers=HEADERS, cookies=COOKIES)
+        page_response = requests.get(url=self.url, headers=HEADERS, cookies=COOKIES, allow_redirects=False)
         if page_response.status_code == requests.codes.ok:
             return html.fromstring(page_response.content)
         else:
