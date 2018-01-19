@@ -1,13 +1,12 @@
 from __future__ import absolute_import
 import time
-from .worker import parse_link
+from .worker import parse_link_h, parse_link_a, parse_link_r
 from .entity import HEADERS, COOKIES
 import requests
 # TODO add to Docker
 from lxml import html
 from tqdm import tqdm
 import multiprocessing
-
 
 
 class Crawler:
@@ -67,6 +66,11 @@ class Crawler:
         download_start = time.time()
         for link in self.links:
             # Add new link for parsing to the queue
-            parse_link.delay(link, self.key)
+            if self.key == 'hotel':
+                parse_link_h.delay(link, self.key)
+            if self.key == 'attraction':
+                parse_link_a.delay(link, self.key)
+            if self.key == 'restaurant':
+                parse_link_r.delay(link, self.key)
         download_end = time.time()
         print("Finished broadcasting links:", download_end - download_start, ' s')

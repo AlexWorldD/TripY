@@ -7,3 +7,4 @@ MongoDB Installation
 
 /Users/lex/anaconda3/envs/WEB/bin/celery -A TripY --loglevel=info
 /Users/lex/anaconda3/envs/WEB/bin/celery worker -l info -A TripY.celery  --loglevel=info
+pkill -f "celery worker"
