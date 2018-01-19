@@ -8,6 +8,9 @@ SETCOLOR_FAILURE="echo -en \\033[1;31m"
 SETCOLOR_NORMAL="echo -en \\033[0;39m"
 BOLD=$(tput bold)
 NORMAL_FONT=$(tput sgr0)
+sudo ufw allow 27017
+sudo ufw allow 15672
+sudo ufw allow 5672
 sudo pip install -r requirements.txt
 
 
