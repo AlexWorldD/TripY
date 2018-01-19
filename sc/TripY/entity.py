@@ -2,13 +2,26 @@ import requests
 from lxml import html
 import json
 import re
-from .crawler import HEADERS, COOKIES
 from pymongo import MongoClient
 from cluster_managment import default_config as CONFIG
 
 client = MongoClient(CONFIG.MONGO)  # change the ip and port to your mongo database's
 DB = client.TripY
 
+# CONSTANTS
+HEADERS = {
+    'Accept': 'text/javascript, text/html, application/xml, text/xml, */*',
+    'Accept-Encoding': 'gzip,deflate',
+    'Accept-Language': 'en-US,en;q=0.5',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8',
+    'Host': 'www.tripadvisor.com',
+    'Pragma': 'no-cache',
+    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.89 Safari/537.36'
+}
+
+COOKIES = {"SetCurrency": "USD"}
 
 def get_value(it):
     """
@@ -109,6 +122,7 @@ details_xpath = "//div[@class='highlightedAmenity detailListItem']/text()"
 class Entity():
     def __init__(self, url='', collection='Hotels'):
         self.url = 'https://www.tripadvisor.ru' + url
+        self.success = False
         self.type = ''
         self.title = ''
         self.ID = 0
@@ -194,5 +208,4 @@ class Entity():
             'additional_details': list(self.details)
         }
         DB[self.collection].insert_one(res)
-        # del res['_id']
-        return res
+        self.success = True

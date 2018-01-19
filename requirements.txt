@@ -1,3 +1,4 @@
+pymongo
 celery
 tqdm
 lxml

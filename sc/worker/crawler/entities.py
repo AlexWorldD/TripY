@@ -196,6 +196,6 @@ class Entity():
             'additional_details': list(self.details)
         }
         # TODO require auto selection of collection for insert
-        DB.hotels.insert_one(res)
+        DB['Hotels'].insert_one(res)
         # del res['_id']
         return res
