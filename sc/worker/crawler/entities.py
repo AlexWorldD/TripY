@@ -103,6 +103,7 @@ class Entity():
         self.reviews_count = 0
         self.review_link = ''
         self.reviews = []
+        self.visitors = {}
         self.details = []
 
     def download(self, url = None):
@@ -119,7 +120,7 @@ class Entity():
         else:
             print('bad response code: %d' %page_response.status_code)
 
-    def collect_main_info(self, crawl_reviews = False):
+    def collect_main_info(self, crawl_reviews = False, users_dict = None):
         root = self.download()
         if root is None:
             return;
@@ -165,11 +166,13 @@ class Entity():
                                 # the first div inside the container contains a member info
                                 review = {}
                                 review['UID'] = check(container, 'div[1]/div/div/div[1]/@id')
-    
+
                                 if len(review['UID']) > 4:
                                     review['UID'] = (review['UID'][4:]).split('-')[0]
-                                  # 'https://www.tripadvisor.ru/MemberProfile-a_uid.' + review['UID'] -- url
-    
+
+                                    if not review['UID'] in self.visitors:
+                                        self.visitors[review['UID']] = 'https://www.tripadvisor.ru/MemberProfile-a_uid.' + review['UID']
+
                                 review['user_nickname'] = check(container, 'div[1]/div/div/div[1]/div[2]/span/text()')
                                 wrap = container.xpath('div[2]/div/div[1]')
                                 if len(wrap) > 0:

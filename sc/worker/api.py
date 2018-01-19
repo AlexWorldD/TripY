@@ -69,8 +69,11 @@ def main_page(query, crawl_reviews = False):
     RESULT['Entities'] = {}
     
     # Specify all possible places for city
-    possible_types = link_paths.keys()
-    # possible_types = ['hotel'] # for testing
+
+    # possible_types = link_paths.keys()
+    possible_types = ['hotel'] # for testing
+
+    users = {}
     
     for key in possible_types:
         # TODO test different xpathes and there performance
@@ -98,8 +101,13 @@ def main_page(query, crawl_reviews = False):
         for entity in crawler.data:
             if entity.review_link != '':
                 crawler.links.append(entity.review_link)
+            for ID in entity.visitors:
+                if not ID in users:
+                    users[ID] = entity.visitors[ID]
             RESULT['Entities'][key + 's'].append(entity.dictify())
 
+    print('\nGot %d users\n' %len(users.keys()))
+    
     download_end = time.time()
     print("Finished crawling MAIN page: ", download_end - download_start, ' s')
     
