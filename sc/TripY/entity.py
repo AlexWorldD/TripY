@@ -120,7 +120,7 @@ details_xpath = "//div[@class='highlightedAmenity detailListItem']/text()"
 
 
 class Entity():
-    def __init__(self, url='', collection='Hotels'):
+    def __init__(self, url='', collection='hotels'):
         self.url = 'https://www.tripadvisor.ru' + url
         self.success = False
         self.type = ''

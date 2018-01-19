@@ -16,7 +16,7 @@ class Crawler:
     Includes common info such as link and numbers of that entity.
     """
 
-    def __init__(self, url='', numbers=0, r_num=0, path='', key='Hotels'):
+    def __init__(self, url='', numbers=0, r_num=0, path='', key='hotels'):
         """Create class represents specific entity for city"""
         self.url = 'https://www.tripadvisor.ru' + url
         self.numbers = numbers
