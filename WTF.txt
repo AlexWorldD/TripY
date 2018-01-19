@@ -4,3 +4,5 @@ MongoDB Installation
     vim /etc/mongod.conf
         Comment line with 127.000
 2) git clone -b <branch> <remote_repo>
+
+/Users/lex/anaconda3/envs/WEB/bin/celery -A TripY --loglevel=info

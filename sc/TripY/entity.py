@@ -3,7 +3,7 @@ from lxml import html
 import json
 import re
 from pymongo import MongoClient
-from cluster_managment import default_config as CONFIG
+from TripY.cluster_managment import default_config as CONFIG
 
 client = MongoClient(CONFIG.MONGO)  # change the ip and port to your mongo database's
 DB = client.TripY

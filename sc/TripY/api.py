@@ -2,10 +2,10 @@ import urllib.request
 import os, sys
 import time
 import requests
-from .crawler import Crawler, HEADERS, COOKIES
+from .crawler import Crawler
 from .entity import to_numbers, link_paths
 from pymongo import MongoClient
-from cluster_managment import default_config as CONFIG
+from TripY.cluster_managment import default_config as CONFIG
 
 client = MongoClient(CONFIG.MONGO)
 DB = client.TripY

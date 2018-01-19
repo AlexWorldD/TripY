@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import time
 from .worker import parse_link
 from .entity import HEADERS, COOKIES
