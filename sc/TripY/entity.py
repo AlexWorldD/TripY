@@ -199,7 +199,7 @@ class Entity():
             'type': self.type,
             'title': self.title,
             'url': self.url,
-            '_id': int(self.ID),
+            'id': int(self.ID),
             'address': dict(self.address),
             'contacts': self.contacts.__dict__,
             'prices': self.prices,

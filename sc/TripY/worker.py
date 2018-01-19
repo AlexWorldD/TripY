@@ -2,8 +2,8 @@ from __future__ import absolute_import
 from TripY.celery import app
 from .entity import Entity
 
-app.conf.CELERY_ALWAYS_EAGER = True
-app.conf.CELERY_EAGER_PROPAGATES_EXCEPTIONS = True
+# app.conf.CELERY_ALWAYS_EAGER = True
+# app.conf.CELERY_EAGER_PROPAGATES_EXCEPTIONS = True
 
 
 @app.task(bind=True, default_retry_delay=10)
