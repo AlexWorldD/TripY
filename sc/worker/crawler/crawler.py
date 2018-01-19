@@ -1,11 +1,9 @@
 import time
 import requests
 from lxml import html, etree
-# from abc import ABC, abstractmethod
 from tqdm import tqdm
 import re
 import multiprocessing
-from pathos.multiprocessing import ProcessingPool as Pool
 
 # CONSTANTS
 HEADERS = {
@@ -86,7 +84,7 @@ class Crawler:
         download_start = time.time()
         chunksize = 1
 
-        with Pool(32) as pool:
+        with multiprocessing.Pool(16) as pool:
             self.data = pool.map(self.get_entity, self.data_links)
             self.data = [entry for entry in self.data if entry is not None]
             pool.close()
