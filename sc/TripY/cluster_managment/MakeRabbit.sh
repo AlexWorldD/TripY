@@ -96,3 +96,21 @@ else
     echo
 fi
 
+# Return url for management console
+echo "${BOLD}RabbitMQ amqp address${NORMAL_FONT}"
+$SETCOLOR_SUCCESS
+ip route get 8.8.8.8 | awk '{a = $NF; print "URL: " a ":5672"; exit}'
+$SETCOLOR_NORMAL
+echo
+
+if [ $? -eq 0 ]; then
+    $SETCOLOR_SUCCESS
+    echo -n "$(tput hpa $(tput cols))$(tput cub 6)[OK]"
+    $SETCOLOR_NORMAL
+    echo
+else
+    $SETCOLOR_FAILURE
+    echo -n "$(tput hpa $(tput cols))$(tput cub 6)[fail]"
+    $SETCOLOR_NORMAL
+    echo
+fi
