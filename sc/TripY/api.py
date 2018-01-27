@@ -52,7 +52,6 @@ def main_page(query):
 
     # Start crawling MAIN-PAGE HTML page about required location:
     print("Downloading search results page")
-    # TODO ~1.3s/request
     page_response = requests.post(url=url_from_autocomplete).text
     # urllib.request.urlretrieve(url_from_autocomplete, 'test.html') # Test downloading page for visual comparing.
     parser = html.fromstring(page_response)
@@ -65,7 +64,9 @@ def main_page(query):
     # Specify all possible places for city
     # possible_types = link_paths.keys()
     # possible_types = ['hotel', 'restaurant', 'attraction']  # for testing
-    possible_types = ['restaurant']  # for testing
+    possible_types = ['hotel', 'restaurant']  # for testing
+    _links = {'hotel': ["/Hotel_Review-g298507-d300401-Reviews-Renaissance_St_Petersburg_Baltic_Hotel-St_Petersburg_Northwestern_District.html"],
+              'restaurant': ["/Restaurant_Review-g298507-d5247712-Reviews-Percorso-St_Petersburg_Northwestern_District.html"]}
 
     for key in possible_types:
         # TODO test different xpathes and there performance
@@ -82,12 +83,17 @@ def main_page(query):
                           numbers=_numbers,
                           r_num=_r_num,
                           path=link_paths[key],
-                          key=key
+                          key=key,
+                          geo_id=RESULT['GEO_ID']
                           )
-        crawler.collect_links()
+        # DEV mode, looking just one link
+        if not CONFIG._DEV:
+            crawler.collect_links()
+        else:
+            crawler.links = _links[key]
         print('%d links collected' % len(crawler.links))
         crawler.collect_data()
-        DB['GEO'].insert_one(RESULT)
+    DB['GEO'].insert_one(RESULT)
         # RESULT['Entities'][key + 's'] = [entity.dictify() for entity in crawler.data]
     download_end = time.time()
     print("Finished crawling MAIN page: ", download_end - download_start, ' s')

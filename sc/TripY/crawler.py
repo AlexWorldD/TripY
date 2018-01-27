@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 import time
-from .worker import parse_link_h, parse_link_a, parse_link_r
+from .worker import parse_link_h
 from .entity import HEADERS, COOKIES
 import requests
 # TODO add to Docker
@@ -15,7 +15,7 @@ class Crawler:
     Includes common info such as link and numbers of that entity.
     """
 
-    def __init__(self, url='', numbers=0, r_num=0, path='', key='hotels'):
+    def __init__(self, url='', numbers=0, r_num=0, path='', key='hotels', geo_id=0):
         """Create class represents specific entity for city"""
         self.url = 'https://www.tripadvisor.ru' + url
         self.numbers = numbers
@@ -24,6 +24,7 @@ class Crawler:
         self.data = []
         self.path = path
         self.key = key
+        self.geo_id = geo_id;
 
     def get_links(self, url):
         page_response = requests.get(url=url, headers=HEADERS, cookies=COOKIES)
@@ -66,11 +67,12 @@ class Crawler:
         download_start = time.time()
         for link in self.links:
             # Add new link for parsing to the queue
-            if self.key == 'hotel':
-                parse_link_h.delay(link, self.key)
-            if self.key == 'attraction':
-                parse_link_a.delay(link, self.key)
-            if self.key == 'restaurant':
-                parse_link_r.delay(link, self.key)
+            # if self.key == 'hotel':
+            r = parse_link_h.delay(link, self.key, self.geo_id)
+            print(r.get())
+            # if self.key == 'attraction':
+            #     parse_link_a.delay(link, self.key)
+            # if self.key == 'restaurant':
+            #     parse_link_r.delay(link, self.key)
         download_end = time.time()
         print("Finished broadcasting links:", download_end - download_start, ' s')

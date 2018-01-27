@@ -23,6 +23,7 @@ HEADERS = {
 
 COOKIES = {"SetCurrency": "USD"}
 
+
 def get_value(it):
     """
     Simplest function for explicit outing of range
@@ -120,7 +121,7 @@ details_xpath = "//div[@class='highlightedAmenity detailListItem']/text()"
 
 
 class Entity():
-    def __init__(self, url='', collection='hotels'):
+    def __init__(self, url='', collection='hotels', geo_id=0):
         self.url = 'https://www.tripadvisor.ru' + url
         self.success = False
         self.type = ''
@@ -133,6 +134,7 @@ class Entity():
         self.reviews_count = 0
         self.details = []
         self.collection = collection
+        self.geo_id = geo_id
 
     def download(self):
         """
@@ -196,6 +198,7 @@ class Entity():
 
     def dictify(self):
         res = {
+            'GEO_ID': self.geo_id,
             'type': self.type,
             'title': self.title,
             'url': self.url,

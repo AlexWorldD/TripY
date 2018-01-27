@@ -6,7 +6,7 @@ client = MongoClient('mongodb://exam:A@159.65.17.172/TripY')  # change the ip an
 db = client.TripY
 serverStatusResult = db.command("serverStatus")
 pprint(serverStatusResult)
-db.test.insert_one({'test': 1})
+db.test.hotel.insert_one({'test': 1})
 # post.insert_one({'status': 404, "create_time": 0})
 
 
