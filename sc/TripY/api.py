@@ -1,23 +1,16 @@
-from datetime import datetime
-import time
-import codecs
-import requests
-import unicodecsv as csv
-import argparse
-import os, re, json
-import urllib3
 import urllib.request
-from lxml import html, etree
-import multiprocessing
-from tqdm import tqdm, tqdm_pandas
-
 import os, sys
+import time
+import requests
+from .crawler import Crawler
+from .entity import to_numbers, link_paths
+from pymongo import MongoClient
+from TripY.cluster_managment import default_config as CONFIG
+
+client = MongoClient(CONFIG.MONGO)
+DB = client.TripY
 
 sys.path.insert(0, os.path.abspath(".."))
-
-from .crawler.crawler import Crawler, HEADERS, COOKIES
-from .crawler.entities import *
-
 try:
     from lxml import html, etree
 except:
@@ -26,7 +19,8 @@ except:
     print("sudo apt-get install python3-lxml")
     quit()
 
-def main_page(query, crawl_reviews = False):
+
+def main_page(query):
     download_start = time.time()
     RESULT = {}
     url = 'https://www.tripadvisor.ru/TypeAheadJson?action=API' \
@@ -58,8 +52,7 @@ def main_page(query, crawl_reviews = False):
 
     # Start crawling MAIN-PAGE HTML page about required location:
     print("Downloading search results page")
-    # TODO ~1.3s/request
-    page_response = requests.post(url=url_from_autocomplete, allow_redirects=False).text
+    page_response = requests.post(url=url_from_autocomplete).text
     # urllib.request.urlretrieve(url_from_autocomplete, 'test.html') # Test downloading page for visual comparing.
     parser = html.fromstring(page_response)
     # Get INFO from main page:
@@ -67,48 +60,41 @@ def main_page(query, crawl_reviews = False):
     _descr = parser.xpath(XPATH_TEXT)
 
     RESULT['Description'] = _descr[0][1:-1] if len(_descr) > 0 else ''
-    RESULT['Entities'] = {}
-    RESULT['Users'] = []
-    
-    # Specify all possible places for city
 
-    possible_types = link_paths.keys()
-    # possible_types = ['attraction'] # for testing
+    # Specify all possible places for city
+    # possible_types = link_paths.keys()
+    # possible_types = ['hotel', 'restaurant', 'attraction']  # for testing
+    possible_types = ['hotel', 'restaurant']  # for testing
+    _links = {'hotel': ["/Hotel_Review-g298507-d300401-Reviews-Renaissance_St_Petersburg_Baltic_Hotel-St_Petersburg_Northwestern_District.html"],
+              'restaurant': ["/Restaurant_Review-g298507-d5247712-Reviews-Percorso-St_Petersburg_Northwestern_District.html"]}
+
     for key in possible_types:
-        RESULT['Entities'][key + 's'] = []
+        # TODO test different xpathes and there performance
         XPATH_URL = parser.xpath(
             '//*[@id="BODYCON"]/div[1]/div[1]/div/div[2]/div[2]/ul/li[contains(@class,"' + key + '")]/a/@href')
         XPATH_NUMBERS = parser.xpath(
             '//*[@id="BODYCON"]/div[1]/div[1]/div/div[2]/div[2]/ul/li[contains(@class,"' + key + '")]/a/span[3]/text()')
+        XPATH_REVIEW_NUMBERS = parser.xpath(
+            '//*[@id="BODYCON"]/div[1]/div[1]/div/div[2]/div[2]/ul/li[contains(@class,"' + key + '")]/a/span[4]/text()')
         _url = XPATH_URL[0] if len(XPATH_URL) > 0 else ''
         _numbers = to_numbers(XPATH_NUMBERS[0]) if len(XPATH_NUMBERS) else 0
-        crawler = Crawler(url = _url,
-                          numbers = _numbers,
-                          path = link_paths[key],
-                          crawl_reviews = crawl_reviews)
-
-        crawler.collect_links()
-
-        print('%d links collected' %len(crawler.entity_links))
-
-        crawler.collect_entities()
-
-        for entity in crawler.entities:
-            if entity.review_link != '':
-                crawler.links.append(entity.review_link)
-            for ID in entity.visitors:
-                if not ID in crawler.users:
-                    crawler.users[ID] = dict(entity.visitors[ID])
-            RESULT['Entities'][key + 's'].append(entity.dictify())
-
-    print('%d user links collected' %len(crawler.users.keys()))
-    crawler.collect_users()
-    for user in crawler.users:
-        RESULT['Users'].append(user.dictify())
-
-    # print('Users: ', crawler.users)
-
+        _r_num = to_numbers(XPATH_REVIEW_NUMBERS[0]) if len(XPATH_REVIEW_NUMBERS) else 0
+        crawler = Crawler(url=_url,
+                          numbers=_numbers,
+                          r_num=_r_num,
+                          path=link_paths[key],
+                          key=key,
+                          geo_id=RESULT['GEO_ID']
+                          )
+        # DEV mode, looking just one link
+        if not CONFIG._DEV:
+            crawler.collect_links()
+        else:
+            crawler.links = _links[key]
+        print('%d links collected' % len(crawler.links))
+        crawler.collect_data()
+    DB['GEO'].insert_one(RESULT)
+        # RESULT['Entities'][key + 's'] = [entity.dictify() for entity in crawler.data]
     download_end = time.time()
     print("Finished crawling MAIN page: ", download_end - download_start, ' s')
-
     return RESULT

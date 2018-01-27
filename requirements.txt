@@ -1,0 +1,6 @@
+pymongo
+celery
+tqdm
+lxml
+requests
+

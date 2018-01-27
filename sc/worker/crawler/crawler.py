@@ -1,5 +1,6 @@
 import time
 import requests
+# TODO add to Docker
 from lxml import html, etree
 from tqdm import tqdm
 import re
@@ -55,7 +56,7 @@ class Crawler:
         if page_response.status_code == requests.codes.ok:
             parser = html.fromstring(page_response.content)
         else:
-            print('bad response code: %d' %page_response.status_code)
+            print('bad response code: %d' % page_response.status_code)
             return
         return parser.xpath(self.path)
 
@@ -70,7 +71,6 @@ class Crawler:
             url = user_info['url'])
         user.collect_main_info()
         return user
-        
     def collect_links(self):
         """
         Simple function for collection links to Hotels from different pages of search result
@@ -82,7 +82,7 @@ class Crawler:
             _link_r = '-'.join(self.url.split('-')[2:4])
         except:
             print("Can't split URL:", self.url, " to 2 parts!")
-            
+
         _parts = self.numbers // 30 + 1
         # Parallel version:
         _part_url = []
@@ -101,12 +101,11 @@ class Crawler:
         """
         download_start = time.time()
         chunksize = 1
-
         with multiprocessing.Pool(16) as pool:
             self.entities = pool.map(self.get_entity, self.entity_links)
             self.entities = [entry for entry in self.entities if (entry is not None and entry.title != '')]
             pool.close()
-                
+
         download_end = time.time()
         print("Finished crawling entities:", download_end - download_start, ' s')
 
@@ -134,3 +133,4 @@ class Crawler:
                 
         download_end = time.time()
         print("Finished crawling users:", download_end - download_start, ' s')
+

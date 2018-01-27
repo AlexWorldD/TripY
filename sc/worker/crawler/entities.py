@@ -1,7 +1,6 @@
 import requests
 from lxml import html
 import json
-
 link_paths = {
     'hotel': '//div[contains(@class,"hasDates")]/div[contains(@class,"prw_meta_hsx")]/div[@class="listing"]//div[@class="listing_title"]/a/@href',
     'attraction': '//div[@class="listing_title "]/a/@href',
@@ -10,8 +9,9 @@ link_paths = {
 
 details_xpath = "//div[@class='highlightedAmenity detailListItem']/text()"
 
+
 class Entity():
-    def __init__(self, url = ''):
+    def __init__(self, url=''):
         self.url = 'https://www.tripadvisor.ru' + url
         self.type = ''
         self.title = ''
@@ -24,7 +24,6 @@ class Entity():
         self.reviews = []
         self.visitors = {}
         self.details = []
-
     def collect_main_info(self, crawl_reviews = False):
         root = download(self.url)
 
@@ -103,11 +102,11 @@ class Entity():
                 self.details = root.xpath(details_xpath)
 
     def dictify(self):
-        return {
+        res = {
             'type': self.type,
             'title': self.title,
             'url': self.url,
-            'id': self.ID,
+            '_id': int(self.ID),
             'address': dict(self.address),
             'prices': self.prices,
             'avg_rating': self.avg_rating,
