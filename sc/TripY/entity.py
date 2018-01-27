@@ -3,6 +3,7 @@ from lxml import html
 import json
 import re
 from pymongo import MongoClient
+from pymongo.errors import BulkWriteError
 from TripY.cluster_managment import default_config as CONFIG
 
 client = MongoClient(CONFIG.MONGO)  # change the ip and port to your mongo database's
@@ -22,6 +23,17 @@ HEADERS = {
 }
 
 COOKIES = {"SetCurrency": "USD"}
+
+
+def download(url):
+    """
+    Function for downloading HTML page from server to local machine.
+    """
+    page_response = requests.get(url=url, headers=HEADERS, cookies=COOKIES, allow_redirects=False)
+    if page_response.status_code == requests.codes.ok:
+        return html.fromstring(page_response.content)
+    else:
+        print('bad response code: %d' % page_response.status_code)
 
 
 def get_value(it):
@@ -121,17 +133,21 @@ details_xpath = "//div[@class='highlightedAmenity detailListItem']/text()"
 
 
 class Entity():
-    def __init__(self, url='', collection='hotels', geo_id=0):
+    def __init__(self, url='', collection='hotel', geo_id=0, reviews=False):
         self.url = 'https://www.tripadvisor.ru' + url
         self.success = False
         self.type = ''
         self.title = ''
         self.ID = 0
-        self.address = {}
+        self.address = dict()
         self.contacts = Contacts()
         self.prices = ''
         self.avg_rating = 0
+        self.crawl_reviews = reviews
         self.reviews_count = 0
+        self.review_link = ''
+        self.reviews = []
+        self.visitors = dict()
         self.details = []
         self.collection = collection
         self.geo_id = geo_id
@@ -140,7 +156,6 @@ class Entity():
         """
         Function for downloading HTML page from server to local machine.
         """
-        # TODO try to modify for AJAX request, should be ~2.2 times faster
         page_response = requests.get(url=self.url, headers=HEADERS, cookies=COOKIES, allow_redirects=False)
         if page_response.status_code == requests.codes.ok:
             return html.fromstring(page_response.content)
@@ -151,19 +166,14 @@ class Entity():
         root = self.download()
         if root is None:
             return
-
         title = check(root, '//h1[@id="HEADING"]/text()')
         print("Parsing '%s' . . . " % title, end='')
 
         # ID = root.xpath('//div[@class="blRow"]/@data-locid')
         ID = root.xpath('//@data-locid')
         if len(ID) > 0:
-            # Not sure if the first one is always the one we need
             self.ID = int(ID[0])
-            # For testing WEB parsing
-            # if self.ID == 300189:
-            #     print('t')
-        #     Parsing WEB and Phone
+        # Contacts parsing:
         _tmp = root.xpath(
             "/html/body[@id='BODY_BLOCK_JQUERY_REFLOW']/div[@id='PAGE']/div[@id='taplc_hr_atf_north_star_nostalgic_0']/div[@class='atf_header_wrapper']/div[@class='atf_header ui_container is-mobile full_width']/div[@id='taplc_location_detail_header_hotels_0']/div[@class='prw_rup prw_common_atf_header_bl headerBL']/div[@class='blRow']")
         _tmp = _tmp if len(_tmp) > 0 else root.xpath('//div[@class="blRow"]')
@@ -172,29 +182,74 @@ class Entity():
         _json = root.xpath('//script[@type="application/ld+json"]//text()')
 
         if len(_json) > 0:
-            print('Succeeded')
-
             _json = json.loads(_json[0])
-
             self.type = _json['@type']
             self.title = _json['name']
-
             self.address['country'] = _json['address']['addressCountry']['name']
             self.address['region'] = _json['address']['addressRegion']
             self.address['locality'] = _json['address']['addressLocality']
             self.address['street_full'] = _json['address']['streetAddress']
             self.address['postal_code'] = _json['address']['postalCode']
-
             self.prices = _json['priceRange'] if 'priceRange' in _json else ''
-            self.avg_rating = _json['aggregateRating']['ratingValue'] if 'aggregateRating' in _json else -1
-            self.reviews_count = _json['aggregateRating']['reviewCount'] if 'aggregateRating' in _json else -1
-
+            self.avg_rating = float(_json['aggregateRating']['ratingValue']) if 'aggregateRating' in _json else -1
+            self.reviews_count = int(_json['aggregateRating']['reviewCount']) if 'aggregateRating' in _json else -1
             self.url = _json['url']
 
-            self.details = root.xpath(details_xpath)
+            # Reviews crawling:
+            if self.reviews_count > 0 and self.crawl_reviews:
+                review_link_path = "//div[@class='review-container'][1]/div/div/div/div[2]/div/div[1]/div[2]/a/@href"
+                review_link = root.xpath(review_link_path)
+                if len(review_link) > 0:
+                    self.review_link = 'https://www.tripadvisor.com/' + review_link[0]
+                    while self.review_link != '':
+                        review_page = download(self.review_link)
+                        if review_page is not None:
+                            next_page = check(review_page, "//div[@class='']/div/div/a[2]/@href")
+                            self.review_link = 'https://www.tripadvisor.com/' + next_page if next_page != '' else ''
+                            review_containers = review_page.xpath("//div[@class='reviewSelector']")
+                            for container in review_containers:
+                                # the first div inside the container contains a member info
+                                review = dict()
+                                review['ID'] = container.attrib['data-reviewid']
+                                review['GEO_ID'] = self.geo_id
+                                review['type'] = self.collection
+                                user_id = check(container, 'div/div[1]/div/div/div[1]/@id')
+                                user_nickname = check(container, 'div/div[1]/div/div/div[1]/div[2]/span/text()')
 
+                                if len(user_id) > 4:
+                                    user_id = user_id[4:].split('-')[0]
+
+                                    if not user_id in self.visitors:
+                                        self.visitors[user_id] = {
+                                            'nickname': user_nickname,
+                                            'url': 'https://www.tripadvisor.ru/MemberProfile-a_uid.' + user_id
+                                        }
+                                review['UID'] = user_id
+                                review['user_nickname'] = user_nickname
+                                wrap = container.xpath('div/div[2]/div/div[1]')
+                                if len(wrap) > 0:
+                                    wrap = wrap[0]
+                                    rating = check(wrap, 'div[1]/span[1]/@class')
+                                    review['rating'] = .1 * float(rating[-2:]) if len(rating) > 1 else ''
+                                    review['date'] = check(wrap, 'div[1]/span[2]/@title')
+                                    review['quote'] = check(wrap, 'div[2]/a/span/text()')
+                                    review['text'] = check(wrap, 'div[3]/div/p/text()')
+                                    review['ratings'] = wrap.xpath('div[4]/div/ul/li/ul/li')
+                                    for i in range(len(review['ratings'])):
+                                        rating = {}
+                                        rating['rating'] = check(review['ratings'][i], 'div[1]/@class')
+                                        rating['title'] = check(review['ratings'][i], 'div[2]/text()')
+                                        rating['rating'] = .1 * float(rating['rating'][-2:]) if len(
+                                            rating['rating']) > 1 else ''
+                                        review['ratings'][i] = dict(rating)
+                                self.reviews.append(review)
+                            print('Collected: ', len(self.reviews), '/', self.reviews_count)
+
+            self.details = root.xpath(details_xpath)
+            print('Succeeded')
         else:
             print('Failed')
+        self.success = True
 
     def dictify(self):
         res = {
@@ -206,9 +261,16 @@ class Entity():
             'address': dict(self.address),
             'contacts': self.contacts.__dict__,
             'prices': self.prices,
-            'avg_rating': float(self.avg_rating),
-            'reviews_count': int(self.reviews_count),
+            'avg_rating': self.avg_rating,
+            'reviews_count': self.reviews_count,
             'additional_details': list(self.details)
         }
-        DB[self.collection].insert_one(res)
+        try:
+            DB[self.collection].insert_one(res)
+        except BulkWriteError as exc:
+            pass
+        try:
+            DB.reviews.insert_many(self.reviews)
+        except BulkWriteError as exc:
+            t = exc.details
         self.success = True

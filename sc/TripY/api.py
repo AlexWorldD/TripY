@@ -65,8 +65,10 @@ def main_page(query):
     # possible_types = link_paths.keys()
     # possible_types = ['hotel', 'restaurant', 'attraction']  # for testing
     possible_types = ['hotel', 'restaurant']  # for testing
-    _links = {'hotel': ["/Hotel_Review-g298507-d300401-Reviews-Renaissance_St_Petersburg_Baltic_Hotel-St_Petersburg_Northwestern_District.html"],
-              'restaurant': ["/Restaurant_Review-g298507-d5247712-Reviews-Percorso-St_Petersburg_Northwestern_District.html"]}
+    _links = {'hotel': [
+        "/Hotel_Review-g298507-d300401-Reviews-Renaissance_St_Petersburg_Baltic_Hotel-St_Petersburg_Northwestern_District.html"],
+        'restaurant': [
+            "/Restaurant_Review-g298507-d5247712-Reviews-Percorso-St_Petersburg_Northwestern_District.html"]}
 
     for key in possible_types:
         # TODO test different xpathes and there performance
@@ -84,7 +86,8 @@ def main_page(query):
                           r_num=_r_num,
                           path=link_paths[key],
                           key=key,
-                          geo_id=RESULT['GEO_ID']
+                          geo_id=RESULT['GEO_ID'],
+                          reviews=CONFIG._REVIEWS
                           )
         # DEV mode, looking just one link
         if not CONFIG._DEV:
@@ -93,8 +96,9 @@ def main_page(query):
             crawler.links = _links[key]
         print('%d links collected' % len(crawler.links))
         crawler.collect_data()
+
     DB['GEO'].insert_one(RESULT)
-        # RESULT['Entities'][key + 's'] = [entity.dictify() for entity in crawler.data]
+    # RESULT['Entities'][key + 's'] = [entity.dictify() for entity in crawler.data]
     download_end = time.time()
     print("Finished crawling MAIN page: ", download_end - download_start, ' s')
     return RESULT

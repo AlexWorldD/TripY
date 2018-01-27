@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 import time
 from .worker import parse_link_h
-from .entity import HEADERS, COOKIES
+from .entity import HEADERS, COOKIES, download
 import requests
 # TODO add to Docker
 from lxml import html
@@ -15,7 +15,7 @@ class Crawler:
     Includes common info such as link and numbers of that entity.
     """
 
-    def __init__(self, url='', numbers=0, r_num=0, path='', key='hotels', geo_id=0):
+    def __init__(self, url='', numbers=0, r_num=0, path='', key='hotels', geo_id=0, reviews=False):
         """Create class represents specific entity for city"""
         self.url = 'https://www.tripadvisor.ru' + url
         self.numbers = numbers
@@ -24,7 +24,8 @@ class Crawler:
         self.data = []
         self.path = path
         self.key = key
-        self.geo_id = geo_id;
+        self.geo_id = geo_id
+        self.crawl_reviews = reviews
 
     def get_links(self, url):
         page_response = requests.get(url=url, headers=HEADERS, cookies=COOKIES)
@@ -68,7 +69,7 @@ class Crawler:
         for link in self.links:
             # Add new link for parsing to the queue
             # if self.key == 'hotel':
-            r = parse_link_h.delay(link, self.key, self.geo_id)
+            r = parse_link_h.delay(link, self.key, self.geo_id, self.crawl_reviews)
             print(r.get())
             # if self.key == 'attraction':
             #     parse_link_a.delay(link, self.key)
