@@ -2,45 +2,54 @@ import time
 import requests
 # TODO add to Docker
 from lxml import html, etree
-# from abc import ABC, abstractmethod
 from tqdm import tqdm
 import re
 import multiprocessing
 
 # CONSTANTS
 HEADERS = {
-    'Accept': 'text/javascript, text/html, application/xml, text/xml, */*',
-    'Accept-Encoding': 'gzip,deflate',
-    'Accept-Language': 'en-US,en;q=0.5',
-    'Cache-Control': 'no-cache',
-    'Connection': 'keep-alive',
-    'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8',
-    'Host': 'www.tripadvisor.com',
-    'Pragma': 'no-cache',
-    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.89 Safari/537.36'
-    # 'X-Requested-With': 'XMLHttpRequest'
+	'Accept': 'text/javascript, text/html, application/xml, text/xml, */*',
+	'Accept-Encoding': 'gzip,deflate',
+	'Accept-Language': 'en-US,en;q=0.5',
+	'Cache-Control': 'no-cache',
+	'Connection': 'keep-alive',
+	'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8',
+	'Host': 'www.tripadvisor.com',
+	'Pragma': 'no-cache',
+	'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.89 Safari/537.36'
 }
 
 COOKIES = {"SetCurrency": "USD"}
 
+def download(url):
+    page_response = requests.get(url = url, headers = HEADERS, cookies = COOKIES)
+    if page_response.status_code == requests.codes.ok:
+        return html.fromstring(page_response.content);
+    else:
+        print('bad response code: %d' %page_response.status_code)
+
+def check(root, query):
+    tmp = root.xpath(query)
+    return tmp[0] if len(tmp) > 0 else ''
+
+def to_numbers(cur):
+    if cur == '':
+        return 0
+    return int(''.join(re.findall("\d+", cur)))
+
+from .entities import Entity
+from .users import User
 
 class Crawler:
-    """
-    Base structure for entities such as Hotels/Restaurants and et. al.
-    Includes common info such as link and numbers of that entity.
-    """
-
-    def __init__(self, url='', numbers=0, r_num=0, path='', entity=None):
-        """Create class represents specific entity for city"""
+    def __init__(self, url = '', numbers = 0, path = '', crawl_reviews = False):
         self.url = 'https://www.tripadvisor.ru' + url
         self.numbers = numbers
-        self.reviews_number = r_num
-        self.links = []
-        self.data = []
+        self.entity_links = []
+        self.entities = []
+        self.users = {}
         self.path = path
-        self.entity_constructor = entity
-        # self.entity_crawler = crawler #entity_crawler var contains a constructor of specific entity crawler
-
+        self.crawl_reviews = crawl_reviews
+    
     def get_links(self, url):
         page_response = requests.get(url=url, headers=HEADERS, cookies=COOKIES)
         parser = ''
@@ -49,15 +58,19 @@ class Crawler:
         else:
             print('bad response code: %d' % page_response.status_code)
             return
-        # return parser.xpath('//div[contains(@class,"hasDates")]/div[contains(@class,"prw_meta_hsx")]/div[@class="listing"]//div[@class="listing_title"]/a/@href')
         return parser.xpath(self.path)
 
     def get_entity(self, url):
-        # entity = self.entity_crawler(url = url)
-        entity = self.entity_constructor(url=url)
-        entity.collect_main_info()
+        entity = Entity(url = url)
+        entity.collect_main_info(self.crawl_reviews)
         return entity
 
+    def get_user(self, user_info):
+        user = User(id = user_info['id'],
+            nickname = user_info['nickname'],
+            url = user_info['url'])
+        user.collect_main_info()
+        return user
     def collect_links(self):
         """
         Simple function for collection links to Hotels from different pages of search result
@@ -78,20 +91,46 @@ class Crawler:
         chunksize = 1
         with multiprocessing.Pool() as pool:
             for it in tqdm(pool.imap_unordered(self.get_links, _part_url, chunksize)):
-                self.links.extend(it)
+                self.entity_links.extend(it)
             pool.close()
-
-    def collect_data(self):
+            
+    def collect_entities(self, entity = None):
         """
         Function for collecting data from provided list of links
         :return:
         """
         download_start = time.time()
-
+        chunksize = 1
         with multiprocessing.Pool(16) as pool:
-            self.data = pool.map(self.get_entity, self.links)
-            self.data = [entry for entry in self.data if entry is not None]
+            self.entities = pool.map(self.get_entity, self.entity_links)
+            self.entities = [entry for entry in self.entities if (entry is not None and entry.title != '')]
             pool.close()
 
         download_end = time.time()
-        print("Finished crawling:", download_end - download_start, ' s')
+        print("Finished crawling entities:", download_end - download_start, ' s')
+
+    def collect_users(self):
+        """
+        Function for collecting data from provided list of links
+        :return:
+        """
+        download_start = time.time()
+        chunksize = 1
+
+        users = []
+        for id in self.users:
+            user = {
+                'id': id,
+                'url': self.users[id]['url'],
+                'nickname': self.users[id]['nickname']
+            }
+            users.append(user)
+                    
+        with multiprocessing.Pool(16) as pool:
+            self.users = pool.map(self.get_user, users)
+            self.users = [entry for entry in self.users if entry is not None]
+            pool.close()
+                
+        download_end = time.time()
+        print("Finished crawling users:", download_end - download_start, ' s')
+

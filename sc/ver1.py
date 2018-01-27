@@ -1,5 +1,4 @@
 import json
-import sys
 import worker.api as worker
 from pymongo import MongoClient
 if __name__ == '__main__':
