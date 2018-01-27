@@ -4,7 +4,8 @@
 sudo ufw allow 27017
 sudo ufw allow 15672
 sudo ufw allow 5672
-sudo pip install -r requirements.txt
+sudo apt-get install pip3
+sudo pip3 install -r requirements.txt
 
 
 
