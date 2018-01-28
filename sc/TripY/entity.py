@@ -157,11 +157,10 @@ class Entity():
         Function for downloading HTML page from server to local machine.
         """
         page_response = requests.get(url=self.url, headers=HEADERS, cookies=COOKIES, allow_redirects=False)
-        if page_response.status_code==302:
-            page_response = requests.get(url=self.url, headers=HEADERS, cookies=COOKIES)
-            if page_response.status_code == requests.codes.ok:
+        if page_response.status_code == requests.codes.ok:
                 return html.fromstring(page_response.content)
-        elif page_response.status_code == requests.codes.ok:
+        elif page_response.status_code == 302:
+            print(self.url)
             return html.fromstring(page_response.content)
         else:
             print('bad response code: %d' % page_response.status_code)
@@ -278,4 +277,5 @@ class Entity():
                 DB.reviews.insert_many(self.reviews)
             except BulkWriteError as exc:
                 t = exc.details
+                print(t)
         self.success = True
