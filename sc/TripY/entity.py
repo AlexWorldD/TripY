@@ -157,7 +157,11 @@ class Entity():
         Function for downloading HTML page from server to local machine.
         """
         page_response = requests.get(url=self.url, headers=HEADERS, cookies=COOKIES, allow_redirects=False)
-        if page_response.status_code == requests.codes.ok:
+        if page_response.status_code==302:
+            page_response = requests.get(url=self.url, headers=HEADERS, cookies=COOKIES)
+            if page_response.status_code == requests.codes.ok:
+                return html.fromstring(page_response.content)
+        elif page_response.status_code == requests.codes.ok:
             return html.fromstring(page_response.content)
         else:
             print('bad response code: %d' % page_response.status_code)
