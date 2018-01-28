@@ -65,10 +65,58 @@ def main_page(query):
     # possible_types = link_paths.keys()
     # possible_types = ['hotel', 'restaurant', 'attraction']  # for testing
     possible_types = ['hotel', 'restaurant']  # for testing
+    # _links = {'hotel': [
+    #     "/Hotel_Review-g298507-d300401-Reviews-Renaissance_St_Petersburg_Baltic_Hotel-St_Petersburg_Northwestern_District.html"],
+    #     'restaurant': [
+    #         "/Restaurant_Review-g298507-d5247712-Reviews-Percorso-St_Petersburg_Northwestern_District.html"]}
     _links = {'hotel': [
-        "/Hotel_Review-g298507-d300401-Reviews-Renaissance_St_Petersburg_Baltic_Hotel-St_Petersburg_Northwestern_District.html"],
+        '/Hotel_Review-g298516-d7277751-Reviews-Hotel_Benefit-Perm_Permsky_District_Perm_Krai_Volga_District.html',
+        '/Hotel_Review-g298516-d2696301-Reviews-Hotel_Kruise-Perm_Permsky_District_Perm_Krai_Volga_District.html',
+        '/Hotel_Review-g298516-d2694937-Reviews-Profsoyuznaya-Perm_Permsky_District_Perm_Krai_Volga_District.html',
+        '/Hotel_Review-g298516-d2706222-Reviews-Marmelade-Perm_Permsky_District_Perm_Krai_Volga_District.html',
+        '/Hotel_Review-g298516-d1190029-Reviews-Hilton_Garden_Inn_Perm-Perm_Permsky_District_Perm_Krai_Volga_District.html',
+        '/Hotel_Review-g298516-d1793164-Reviews-Hotel_Vizit-Perm_Permsky_District_Perm_Krai_Volga_District.html',
+        '/Hotel_Review-g298516-d6220354-Reviews-Austeria-Perm_Permsky_District_Perm_Krai_Volga_District.html',
+        '/Hotel_Review-g298516-d579116-Reviews-Ural-Perm_Permsky_District_Perm_Krai_Volga_District.html',
+        '/Hotel_Review-g298516-d305181-Reviews-Sport_Hotel-Perm_Permsky_District_Perm_Krai_Volga_District.html',
+        '/Hotel_Review-g298516-d1200106-Reviews-Prikamie-Perm_Permsky_District_Perm_Krai_Volga_District.html',
+        '/Hotel_Review-g298516-d2704745-Reviews-Scorpion_Hotel-Perm_Permsky_District_Perm_Krai_Volga_District.html',
+        '/Hotel_Review-g298516-d6668344-Reviews-Hotel_Tentorium-Perm_Permsky_District_Perm_Krai_Volga_District.html',
+        '/Hotel_Review-g298516-d7892827-Reviews-Mini_hotel_Venezia-Perm_Permsky_District_Perm_Krai_Volga_District.html',
+        '/Hotel_Review-g298516-d305180-Reviews-Hotel_Mikos-Perm_Permsky_District_Perm_Krai_Volga_District.html',
+        '/Hotel_Review-g298516-d1176379-Reviews-Zhemchuzhina-Perm_Permsky_District_Perm_Krai_Volga_District.html',
+        '/Hotel_Review-g298516-d2680942-Reviews-Eva-Perm_Permsky_District_Perm_Krai_Volga_District.html',
+        '/Hotel_Review-g298516-d1135916-Reviews-Amaks_Premier-Perm_Permsky_District_Perm_Krai_Volga_District.html',
+        '/Hotel_Review-g298516-d6208049-Reviews-Travel_Hotel-Perm_Permsky_District_Perm_Krai_Volga_District.html',
+        '/Hotel_Review-g298516-d4241855-Reviews-City_Star-Perm_Permsky_District_Perm_Krai_Volga_District.html',
+        '/Hotel_Review-g298516-d2664202-Reviews-Hotel_Vicont-Perm_Permsky_District_Perm_Krai_Volga_District.html',
+        '/Hotel_Review-g298516-d12959660-Reviews-Aura_City_Hotel-Perm_Permsky_District_Perm_Krai_Volga_District.html',
+        '/Hotel_Review-g298516-d608176-Reviews-New_Star-Perm_Permsky_District_Perm_Krai_Volga_District.html',
+        '/Hotel_Review-g298516-d6585734-Reviews-Avant-Perm_Permsky_District_Perm_Krai_Volga_District.html',
+        '/Hotel_Review-g298516-d579122-Reviews-Tourist_Hotel-Perm_Permsky_District_Perm_Krai_Volga_District.html',
+        '/Hotel_Review-g298516-d1191027-Reviews-Kama_Business_Hotel-Perm_Permsky_District_Perm_Krai_Volga_District.html',
+        '/Hotel_Review-g298516-d501269-Reviews-Best_Eastern_Hotel_Almaz_Urala-Perm_Permsky_District_Perm_Krai_Volga_District.html'],
         'restaurant': [
-            "/Restaurant_Review-g298507-d5247712-Reviews-Percorso-St_Petersburg_Northwestern_District.html"]}
+            '/Restaurant_Review-g298516-d10329311-Reviews-Chaika_ZaZa-Perm_Permsky_District_Perm_Krai_Volga_District.html',
+            '/Restaurant_Review-g298516-d12072808-Reviews-REBRA_Shop-Perm_Permsky_District_Perm_Krai_Volga_District.html',
+            '/Restaurant_Review-g298516-d6076975-Reviews-Khutorok-Perm_Permsky_District_Perm_Krai_Volga_District.html',
+            '/Restaurant_Review-g298516-d6076857-Reviews-Sufra-Perm_Permsky_District_Perm_Krai_Volga_District.html',
+            '/Restaurant_Review-g298516-d12614129-Reviews-Rob_Roy-Perm_Permsky_District_Perm_Krai_Volga_District.html',
+            '/Restaurant_Review-g298516-d6077064-Reviews-Khutorok-Perm_Permsky_District_Perm_Krai_Volga_District.html',
+            '/Restaurant_Review-g298516-d6495789-Reviews-Expedicia_Severnaya_Kukhnya-Perm_Permsky_District_Perm_Krai_Volga_District.html',
+            '/Restaurant_Review-g298516-d12288833-Reviews-Lombardia_Cafe-Perm_Permsky_District_Perm_Krai_Volga_District.html',
+            '/Restaurant_Review-g298516-d6988325-Reviews-Permskaya_Kukhnya-Perm_Permsky_District_Perm_Krai_Volga_District.html',
+            '/Restaurant_Review-g298516-d8867932-Reviews-Gala_Cafe-Perm_Permsky_District_Perm_Krai_Volga_District.html',
+            '/Restaurant_Review-g298516-d8348349-Reviews-Oblaka-Perm_Permsky_District_Perm_Krai_Volga_District.html',
+            '/Restaurant_Review-g298516-d6495962-Reviews-Restaurant_Parmesan-Perm_Permsky_District_Perm_Krai_Volga_District.html',
+            '/Restaurant_Review-g298516-d8348290-Reviews-Nikala_Pirosmani-Perm_Permsky_District_Perm_Krai_Volga_District.html',
+            '/Restaurant_Review-g298516-d6076360-Reviews-Coffeeshop_Company-Perm_Permsky_District_Perm_Krai_Volga_District.html',
+            '/Restaurant_Review-g298516-d6743141-Reviews-Cheshire_Cat_Cheese-Perm_Permsky_District_Perm_Krai_Volga_District.html',
+            '/Restaurant_Review-g298516-d6076649-Reviews-Kredo-Perm_Permsky_District_Perm_Krai_Volga_District.html',
+            '/Restaurant_Review-g298516-d12190943-Reviews-BarBurger-Perm_Permsky_District_Perm_Krai_Volga_District.html',
+            '/Restaurant_Review-g298516-d10727282-Reviews-Fresh_Market-Perm_Permsky_District_Perm_Krai_Volga_District.html',
+            '/Restaurant_Review-g298516-d2722005-Reviews-Oliva-Perm_Permsky_District_Perm_Krai_Volga_District.html',
+            '/Restaurant_Review-g298516-d6077002-Reviews-Chaikhana-Perm_Permsky_District_Perm_Krai_Volga_District.html']}
 
     for key in possible_types:
         # TODO test different xpathes and there performance
@@ -96,6 +144,7 @@ def main_page(query):
             crawler.links = _links[key]
         print('%d links collected' % len(crawler.links))
         crawler.collect_data()
+        del crawler
 
     DB['GEO'].insert_one(RESULT)
     # RESULT['Entities'][key + 's'] = [entity.dictify() for entity in crawler.data]

@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 import time
-from .worker import parse_link
+import importlib
 from .entity import HEADERS, COOKIES, download
 import requests
 # TODO add to Docker
@@ -15,7 +15,7 @@ class Crawler:
     Includes common info such as link and numbers of that entity.
     """
 
-    def __init__(self, url='', numbers=0, r_num=0, path='', key='hotels', geo_id=0, reviews=False):
+    def __init__(self, url='', numbers=0, r_num=0, path='', key='hotel', geo_id=0, reviews=False):
         """Create class represents specific entity for city"""
         self.url = 'https://www.tripadvisor.ru' + url
         self.numbers = numbers
@@ -58,7 +58,7 @@ class Crawler:
         with multiprocessing.Pool() as pool:
             for it in tqdm(pool.imap_unordered(self.get_links, _part_url, chunksize)):
                 self.links.extend(it)
-            pool.close()
+        pool.close()
 
     def collect_data(self):
         """
@@ -66,14 +66,26 @@ class Crawler:
         :return:
         """
         download_start = time.time()
+        from .worker import parse_link
+        # try:
+        #     parse_link.apply_async(args=[self.links[0], self.key, self.geo_id, self.crawl_reviews], queue='wtf', retry=True,
+        #                            retry_policy={
+        #                                'max_retries': 3,
+        #                                'interval_start': 0,
+        #                                'interval_step': 0.2,
+        #                                'interval_max': 0.2,
+        #                            })
+        # except parse_link.OperationalError as exc:
+        #     print('Sending task raised: %r', exc)
         for link in self.links:
             # Add new link for parsing to the queue
             # if self.key == 'hotel':
-            r = parse_link.apply_async(args=[link, self.key, self.geo_id, self.crawl_reviews], queue='entity')
-            print(r.get())
+            parse_link.apply_async(args=[link, self.key, self.geo_id, self.crawl_reviews])
+            # print(r.get())
             # if self.key == 'attraction':
             #     parse_link_a.delay(link, self.key)
             # if self.key == 'restaurant':
             #     parse_link_r.delay(link, self.key)
         download_end = time.time()
+        del parse_link
         print("Finished broadcasting links:", download_end - download_start, ' s')

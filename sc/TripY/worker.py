@@ -18,7 +18,6 @@ def parse_link(self, url, key, geo_id, reviews):
     except Exception as exc:
         raise self.retry(exc=exc)
 
-
 # @app.task(bind=True, default_retry_delay=10)
 # def parse_link_r(self, url, key):
 #     try:
