@@ -6,3 +6,7 @@ MONGO = 'mongodb://exam:A@159.65.17.172/TripY'
 _DEV = False
 _REVIEWS = True
 # from config import *
+
+from fake_useragent import UserAgent
+
+ui = UserAgent()

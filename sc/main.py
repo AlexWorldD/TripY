@@ -3,6 +3,7 @@
 from __future__ import absolute_import
 import json
 import sys
+import fake_useragent
 import TripY.api as TripY
 from pymongo import MongoClient
 

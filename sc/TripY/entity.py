@@ -1,4 +1,5 @@
 import requests
+import fake_useragent
 from lxml import html
 import json
 import re
@@ -29,7 +30,9 @@ def download(url):
     """
     Function for downloading HTML page from server to local machine.
     """
-    page_response = requests.get(url=url, headers=HEADERS, cookies=COOKIES, allow_redirects=False)
+    _H = HEADERS
+    _H['User-Agent'] = CONFIG.ui.random
+    page_response = requests.get(url=url, headers=_H, cookies=COOKIES, allow_redirects=False)
     if page_response.status_code == requests.codes.ok:
         return html.fromstring(page_response.content)
     else:
@@ -156,12 +159,18 @@ class Entity():
         """
         Function for downloading HTML page from server to local machine.
         """
-        page_response = requests.get(url=self.url, headers=HEADERS, cookies=COOKIES, allow_redirects=False)
+        _H = HEADERS
+        _H['User-Agent'] = CONFIG.ui.random
+        page_response = requests.get(url=self.url, headers=_H, cookies=COOKIES, allow_redirects=False)
         if page_response.status_code == requests.codes.ok:
                 return html.fromstring(page_response.content)
         elif page_response.status_code == 302:
-            print(self.url)
-            return html.fromstring(page_response.content)
+            print('Redirect to', page_response.url)
+            page_response = requests.get(url=page_response.url, headers=HEADERS, cookies=COOKIES, allow_redirects=False)
+            if page_response.status_code == requests.codes.ok:
+                return html.fromstring(page_response.content)
+            else:
+                print('bad response code: %d' % page_response.status_code)
         else:
             print('bad response code: %d' % page_response.status_code)
 

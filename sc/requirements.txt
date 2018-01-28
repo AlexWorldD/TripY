@@ -3,4 +3,4 @@ celery
 tqdm
 lxml
 requests
-
+fake_useragent
