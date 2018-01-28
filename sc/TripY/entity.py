@@ -3,6 +3,7 @@ import fake_useragent
 from lxml import html
 import json
 import re
+import time
 from pymongo import MongoClient
 from pymongo.errors import BulkWriteError
 from TripY.cluster_managment import default_config as CONFIG
@@ -24,6 +25,12 @@ HEADERS = {
 }
 
 COOKIES = {"SetCurrency": "USD"}
+
+
+def random_header():
+    _H = HEADERS
+    _H['User-Agent'] = CONFIG.ui.random
+    return _H
 
 
 def download(url):
@@ -159,11 +166,19 @@ class Entity():
         """
         Function for downloading HTML page from server to local machine.
         """
-        _H = HEADERS
-        _H['User-Agent'] = CONFIG.ui.random
-        page_response = requests.get(url=self.url, headers=_H, cookies=COOKIES, allow_redirects=False)
+        # _H = HEADERS
+        # _H['User-Agent'] = CONFIG.ui.random
+        page_response = requests.get(url=self.url, headers=random_header(), cookies=COOKIES, allow_redirects=False)
+        cnt = 0
+        while page_response.status_code == 301:
+            page_response = requests.get(url=self.url, headers=random_header(), cookies=COOKIES, allow_redirects=False)
+            cnt += 1
+            if cnt % 10 == 0:
+                time.sleep(5)
+            if cnt > 100:
+                break
         if page_response.status_code == requests.codes.ok:
-                return html.fromstring(page_response.content)
+            return html.fromstring(page_response.content)
         elif page_response.status_code == 302:
             print('Redirect to', page_response.url)
             page_response = requests.get(url=page_response.url, headers=HEADERS, cookies=COOKIES, allow_redirects=False)
