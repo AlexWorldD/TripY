@@ -37,11 +37,25 @@ def download(url):
     """
     Function for downloading HTML page from server to local machine.
     """
-    _H = HEADERS
-    _H['User-Agent'] = CONFIG.ui.random
-    page_response = requests.get(url=url, headers=_H, cookies=COOKIES, allow_redirects=False)
+    page_response = requests.get(url=url, headers=random_header(), cookies=COOKIES, allow_redirects=False)
+    cnt = 0
+    while page_response.status_code == 301 or page_response.status_code == 302:
+        page_response = requests.get(url=url, headers=random_header(), cookies=COOKIES, allow_redirects=False)
+        cnt += 1
+        if cnt % 10 == 0:
+            time.sleep(5)
+        if cnt > 50:
+            break
     if page_response.status_code == requests.codes.ok:
         return html.fromstring(page_response.content)
+    elif page_response.status_code == 302:
+        print('Redirect to', page_response.headers['Location'])
+        page_response = requests.get(url=page_response.headers['Location'], headers=HEADERS, cookies=COOKIES,
+                                     allow_redirects=False)
+        if page_response.status_code == requests.codes.ok:
+            return html.fromstring(page_response.content)
+        else:
+            print('bad response code: %d' % page_response.status_code)
     else:
         print('bad response code: %d' % page_response.status_code)
 
@@ -122,12 +136,12 @@ class Contacts:
         # TODO make robust for nan values or not-find DOM element
         try:
             _st_add = get_value(it[0].xpath('div[contains(@class, "phone")][1]/span[2]/text()'))
-            self.phone = to_numbers(_st_add)
+            self.phone = str(to_numbers(_st_add))
         except:
             pass
             # print("Can't parse phone number:", link)
         try:
-            self.web = get_web(it[0].xpath('./div[@class="blEntry website"]/span/text()'), d_id, link)
+            self.web = str(get_web(it[0].xpath('./div[@class="blEntry website"]/span/text()'), d_id, link))
         except:
             pass
             # print("Can't parse WEB-site:", link)
@@ -170,7 +184,7 @@ class Entity():
         # _H['User-Agent'] = CONFIG.ui.random
         page_response = requests.get(url=self.url, headers=random_header(), cookies=COOKIES, allow_redirects=False)
         cnt = 0
-        while page_response.status_code == 301:
+        while page_response.status_code == 301 or page_response.status_code == 302:
             page_response = requests.get(url=self.url, headers=random_header(), cookies=COOKIES, allow_redirects=False)
             cnt += 1
             if cnt % 10 == 0:
@@ -180,8 +194,9 @@ class Entity():
         if page_response.status_code == requests.codes.ok:
             return html.fromstring(page_response.content)
         elif page_response.status_code == 302:
-            print('Redirect to', page_response.url)
-            page_response = requests.get(url=page_response.url, headers=HEADERS, cookies=COOKIES, allow_redirects=False)
+            print('Redirect to', page_response.headers['Location'])
+            page_response = requests.get(url=page_response.headers['Location'], headers=HEADERS, cookies=COOKIES,
+                                         allow_redirects=False)
             if page_response.status_code == requests.codes.ok:
                 return html.fromstring(page_response.content)
             else:
