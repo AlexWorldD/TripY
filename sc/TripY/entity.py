@@ -183,7 +183,7 @@ class Entity():
         self.collection = collection
         self.geo_id = geo_id
 
-    def download(self):
+    def downloadv2(self):
         """
         Function for downloading HTML page from server to local machine.
         """
@@ -205,6 +205,36 @@ class Entity():
             print('Redirect to', page_response.headers['Location'])
             page_response = requests.get(url=page_response.headers['Location'], headers=_HEADERS_min, cookies=COOKIES)
             print(page_response)
+            if page_response.status_code == requests.codes.ok:
+                print('After redirect all cool!')
+                return html.fromstring(page_response.content)
+            else:
+                print(page_response.history)
+                print('bad response code: %d' % page_response.status_code)
+        else:
+            print('bad response code: %d' % page_response.status_code)
+
+    def download(self):
+        """
+        Function for downloading HTML page from server to local machine.
+        """
+        # _H = HEADERS
+        # _H['User-Agent'] = CONFIG.ui.random
+        page_response = requests.get(url=self.url, headers=random_header(), cookies=COOKIES, allow_redirects=False)
+        cnt = 0
+        while page_response.status_code == 301:
+            page_response = requests.get(url=self.url, headers=random_header(), cookies=COOKIES, allow_redirects=False)
+            cnt += 1
+            if cnt % 10 == 0:
+                print('Repeat request after 5s')
+                time.sleep(5)
+            if cnt > 100:
+                break
+        if page_response.status_code == requests.codes.ok:
+            return html.fromstring(page_response.content)
+        elif page_response.status_code == 302:
+            print('Redirect to', page_response.url)
+            page_response = requests.get(url=page_response.url, headers=HEADERS, cookies=COOKIES, allow_redirects=False)
             if page_response.status_code == requests.codes.ok:
                 print('After redirect all cool!')
                 return html.fromstring(page_response.content)
