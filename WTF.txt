@@ -6,5 +6,7 @@ MongoDB Installation
 2) git clone -b <branch> <remote_repo>
 
 /Users/lex/anaconda3/envs/WEB/bin/celery -A TripY --concurrency=20 --loglevel=info
-/Users/lex/anaconda3/envs/WEB/bin/celery worker -l info -A TripY.celery  --concurrency=20 --loglevel=info
+/Users/lex/anaconda3/envs/WEB/bin/celery worker -l info -A TripY.celery -Q entity --concurrency=20 --loglevel=info
+/Users/lex/anaconda3/envs/WEB/bin/celery worker -l info -A TripY.celery  -Q entity --statedb=/var/run/celery/%n.state --autoscale=10,3 --concurrency=20 --loglevel=info
 pkill -f "celery worker"
+

@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 import time
-from .worker import parse_link_h
+from .worker import parse_link
 from .entity import HEADERS, COOKIES, download
 import requests
 # TODO add to Docker
@@ -69,7 +69,7 @@ class Crawler:
         for link in self.links:
             # Add new link for parsing to the queue
             # if self.key == 'hotel':
-            r = parse_link_h.delay(link, self.key, self.geo_id, self.crawl_reviews)
+            r = parse_link.apply_async(args=[link, self.key, self.geo_id, self.crawl_reviews], queue='entity')
             print(r.get())
             # if self.key == 'attraction':
             #     parse_link_a.delay(link, self.key)

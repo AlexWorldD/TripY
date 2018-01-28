@@ -1,4 +1,4 @@
-import urllib.request
+import urllib
 import os, sys
 import time
 import requests

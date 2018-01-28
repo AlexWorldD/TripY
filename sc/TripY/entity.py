@@ -269,8 +269,9 @@ class Entity():
             DB[self.collection].insert_one(res)
         except BulkWriteError as exc:
             pass
-        try:
-            DB.reviews.insert_many(self.reviews)
-        except BulkWriteError as exc:
-            t = exc.details
+        if self.reviews_count > 0 and self.crawl_reviews:
+            try:
+                DB.reviews.insert_many(self.reviews)
+            except BulkWriteError as exc:
+                t = exc.details
         self.success = True

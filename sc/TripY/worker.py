@@ -7,13 +7,12 @@ from .entity import Entity
 # app.conf.CELERY_EAGER_PROPAGATES_EXCEPTIONS = True
 
 
-@app.task(bind=True, default_retry_delay=10)
-def parse_link_h(self, url, key, geo_id, reviews):
+@app.task(bind=True, default_retry_delay=10, reply_to='results')
+def parse_link(self, url, key, geo_id, reviews):
     try:
         entity = Entity(url, key, geo_id, reviews)
-        self.update_state(state="PROGRESS", meta={'progress': 20})
         entity.collect_main_info()
-        self.update_state(state="PROGRESS", meta={'progress': 50})
+        # self.update_state(state="PROGRESS", meta={'progress': 50})
         entity.dictify()
         return entity.success
     except Exception as exc:
