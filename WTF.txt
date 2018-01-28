@@ -10,4 +10,5 @@ MongoDB Installation
 /Users/lex/anaconda3/envs/WEB/bin/celery worker -l info -A TripY.celery  -Q entity --statedb=/var/run/celery/%n.state --autoscale=10,3 --concurrency=20 --loglevel=info
 pkill -f "celery worker"
 docker-compose up --build --scale worker=3
+docker-compose up --force-recreate --build --scale worker=3
 

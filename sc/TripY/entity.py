@@ -183,7 +183,7 @@ class Entity():
         self.collection = collection
         self.geo_id = geo_id
 
-    def downloadv2(self):
+    def download_v2(self):
         """
         Function for downloading HTML page from server to local machine.
         """
