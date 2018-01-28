@@ -188,6 +188,7 @@ class Entity():
             page_response = requests.get(url=self.url, headers=random_header(), cookies=COOKIES, allow_redirects=False)
             cnt += 1
             if cnt % 10 == 0:
+                print('Repeat request after 5s')
                 time.sleep(5)
             if cnt > 100:
                 break
