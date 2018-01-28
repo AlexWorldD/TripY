@@ -39,7 +39,7 @@ def download(url):
     """
     page_response = requests.get(url=url, headers=random_header(), cookies=COOKIES, allow_redirects=False)
     cnt = 0
-    while page_response.status_code == 301 or page_response.status_code == 302:
+    while page_response.status_code == 301:
         page_response = requests.get(url=url, headers=random_header(), cookies=COOKIES, allow_redirects=False)
         cnt += 1
         if cnt % 10 == 0:
@@ -158,7 +158,8 @@ details_xpath = "//div[@class='highlightedAmenity detailListItem']/text()"
 
 class Entity():
     def __init__(self, url='', collection='hotel', geo_id=0, reviews=False):
-        self.url = 'https://www.tripadvisor.ru' + url
+        # TODO try to change to .com let's see)
+        self.url = 'https://www.tripadvisor.com' + url
         self.success = False
         self.type = ''
         self.title = ''
@@ -184,7 +185,7 @@ class Entity():
         # _H['User-Agent'] = CONFIG.ui.random
         page_response = requests.get(url=self.url, headers=random_header(), cookies=COOKIES, allow_redirects=False)
         cnt = 0
-        while page_response.status_code == 301 or page_response.status_code == 302:
+        while page_response.status_code == 301:
             page_response = requests.get(url=self.url, headers=random_header(), cookies=COOKIES, allow_redirects=False)
             cnt += 1
             if cnt % 10 == 0:
@@ -199,6 +200,7 @@ class Entity():
             page_response = requests.get(url=page_response.headers['Location'], headers=HEADERS, cookies=COOKIES,
                                          allow_redirects=False)
             if page_response.status_code == requests.codes.ok:
+                print('After redirect all cool!')
                 return html.fromstring(page_response.content)
             else:
                 print('bad response code: %d' % page_response.status_code)
