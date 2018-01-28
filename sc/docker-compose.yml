@@ -18,8 +18,8 @@ services:
             - rabbit
         depends_on:
             - rabbit
-    database:
-        hostname: mongo
-        image: mongo:latest
-        ports:
-            - "27017:27017"
+#    database:
+#        hostname: mongo
+#        image: mongo:latest
+#        ports:
+#            - "27017:27017"

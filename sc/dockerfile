@@ -3,4 +3,4 @@ ADD requirements.txt /app/requirements.txt
 ADD ./TripY/ /app/
 WORKDIR /app/
 RUN pip install -r requirements.txt
-ENTRYPOINT celery worker -l info -A TripY.celery -Q hotel,restaurant --concurrency=30
+ENTRYPOINT celery worker -l info -A TripY.celery -Q hotel,restaurant, attraction --concurrency=10
