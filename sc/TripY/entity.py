@@ -203,8 +203,7 @@ class Entity():
             return html.fromstring(page_response.content)
         elif page_response.status_code == 302:
             print('Redirect to', page_response.headers['Location'])
-            page_response = requests.get(url=page_response.headers['Location'], headers=_HEADERS_min, cookies=COOKIES,
-                                         allow_redirects=False)
+            page_response = requests.get(url=page_response.headers['Location'], headers=_HEADERS_min, cookies=COOKIES)
             print(page_response)
             if page_response.status_code == requests.codes.ok:
                 print('After redirect all cool!')

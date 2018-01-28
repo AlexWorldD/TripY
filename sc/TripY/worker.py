@@ -13,7 +13,8 @@ def parse_link(self, url, key, geo_id, reviews):
         entity = Entity(url, key, geo_id, reviews)
         entity.collect_main_info()
         # self.update_state(state="PROGRESS", meta={'progress': 50})
-        entity.dictify()
+        if entity.success:
+            entity.dictify()
         return entity.success
     except Exception as exc:
         raise self.retry(exc=exc)
