@@ -24,6 +24,12 @@ HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.89 Safari/537.36'
 }
 
+_HEADERS_min = {
+    'Accept': 'text/javascript, text/html, application/xml, text/xml, */*',
+    'Connection': 'keep-alive',
+    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.89 Safari/537.36'
+}
+
 COOKIES = {"SetCurrency": "USD"}
 
 
@@ -50,7 +56,7 @@ def download(url):
         return html.fromstring(page_response.content)
     elif page_response.status_code == 302:
         print('Redirect to', page_response.headers['Location'])
-        page_response = requests.get(url=page_response.headers['Location'], headers=HEADERS, cookies=COOKIES,
+        page_response = requests.get(url=page_response.headers['Location'], headers=_HEADERS_min, cookies=COOKIES,
                                      allow_redirects=False)
         if page_response.status_code == requests.codes.ok:
             return html.fromstring(page_response.content)
@@ -159,7 +165,7 @@ details_xpath = "//div[@class='highlightedAmenity detailListItem']/text()"
 class Entity():
     def __init__(self, url='', collection='hotel', geo_id=0, reviews=False):
         # TODO try to change to .com let's see)
-        self.url = 'https://www.tripadvisor.com' + url
+        self.url = 'https://www.tripadvisor.ca' + url
         self.success = False
         self.type = ''
         self.title = ''
@@ -197,12 +203,14 @@ class Entity():
             return html.fromstring(page_response.content)
         elif page_response.status_code == 302:
             print('Redirect to', page_response.headers['Location'])
-            page_response = requests.get(url=page_response.headers['Location'], headers=HEADERS, cookies=COOKIES,
+            page_response = requests.get(url=page_response.headers['Location'], headers=_HEADERS_min, cookies=COOKIES,
                                          allow_redirects=False)
+            print(page_response)
             if page_response.status_code == requests.codes.ok:
                 print('After redirect all cool!')
                 return html.fromstring(page_response.content)
             else:
+                print(page_response.history)
                 print('bad response code: %d' % page_response.status_code)
         else:
             print('bad response code: %d' % page_response.status_code)
