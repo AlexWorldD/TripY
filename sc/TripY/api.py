@@ -117,7 +117,7 @@ def main_page(query):
             '/Restaurant_Review-g298516-d10727282-Reviews-Fresh_Market-Perm_Permsky_District_Perm_Krai_Volga_District.html',
             '/Restaurant_Review-g298516-d2722005-Reviews-Oliva-Perm_Permsky_District_Perm_Krai_Volga_District.html',
             '/Restaurant_Review-g298516-d6077002-Reviews-Chaikhana-Perm_Permsky_District_Perm_Krai_Volga_District.html']}
-
+    _crawlers = []
     for key in possible_types:
         # TODO test different xpathes and there performance
         XPATH_URL = parser.xpath(
@@ -143,9 +143,11 @@ def main_page(query):
         else:
             crawler.links = _links[key]
         print('%d links collected' % len(crawler.links))
-        crawler.collect_data()
+        _crawlers.append(crawler)
+        # crawler.collect_data()
         del crawler
-
+    for craw in _crawlers:
+        craw.collect_data()
     DB['GEO'].insert_one(RESULT)
     # RESULT['Entities'][key + 's'] = [entity.dictify() for entity in crawler.data]
     download_end = time.time()

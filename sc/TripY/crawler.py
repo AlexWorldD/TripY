@@ -58,7 +58,7 @@ class Crawler:
         with multiprocessing.Pool() as pool:
             for it in tqdm(pool.imap_unordered(self.get_links, _part_url, chunksize)):
                 self.links.extend(it)
-        pool.close()
+            pool.close()
 
     def collect_data(self):
         """
@@ -80,7 +80,7 @@ class Crawler:
         for link in self.links:
             # Add new link for parsing to the queue
             # if self.key == 'hotel':
-            parse_link.apply_async(args=[link, self.key, self.geo_id, self.crawl_reviews])
+            parse_link.apply_async(args=[link, self.key, self.geo_id, self.crawl_reviews], queue=self.key)
             # print(r.get())
             # if self.key == 'attraction':
             #     parse_link_a.delay(link, self.key)
