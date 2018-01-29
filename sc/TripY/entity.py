@@ -73,9 +73,9 @@ def download(url):
         if page_response.status_code == requests.codes.ok:
             return html.fromstring(page_response.content)
         else:
-            print(bcolors.WARNING + '[REVIEWS] bad response code: %d' + bcolors.ENDC % page_response.status_code)
+            print(bcolors.WARNING + '[REVIEWS] bad response code: '+bcolors.ENDC, page_response.status_code)
     else:
-        print('[REVIEWS] bad response code after 100 repeats: %d' % page_response.status_code)
+        print(bcolors.WARNING+'[REVIEWS] bad response code after 100 repeats: '+bcolors.ENDC, page_response.status_code)
 
 
 def get_value(it):
@@ -221,9 +221,9 @@ class Entity():
                 return html.fromstring(page_response.content)
             else:
                 print(page_response.history)
-                print(bcolors.WARNING + 'bad response code: %d' + bcolors.ENDC % page_response.status_code)
+                print(bcolors.WARNING + 'bad response code: '+bcolors.ENDC, page_response.status_code)
         else:
-            print('bad response code after 100 retries(: %d' % page_response.status_code)
+            print('bad response code after 100 retries(: ', page_response.status_code)
 
     def collect_main_info(self):
         root = self.download()
@@ -231,7 +231,7 @@ class Entity():
             print(bcolors.WARNING + 'Root is NONE for' + bcolors.ENDC, self.url)
             return
         title = check(root, '//h1[@id="HEADING"]/text()')
-        print("Parsing '%s' . . . " % title, end='')
+        print('Parsing: ', title)
 
         # ID = root.xpath('//div[@class="blRow"]/@data-locid')
         ID = root.xpath('//@data-locid')
