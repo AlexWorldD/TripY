@@ -11,6 +11,7 @@ from TripY.cluster_managment import default_config as CONFIG
 client = MongoClient(CONFIG.MONGO)  # change the ip and port to your mongo database's
 DB = client.TripY
 
+
 class bcolors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
@@ -20,6 +21,8 @@ class bcolors:
     ENDC = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
+
+
 # CONSTANTS
 HEADERS = {
     'Accept': 'text/javascript, text/html, application/xml, text/xml, */*',
@@ -59,7 +62,7 @@ def download(url):
         cnt += 1
         if cnt % 10 == 0:
             time.sleep(5)
-        if cnt > 50:
+        if cnt > 100:
             break
     if page_response.status_code == requests.codes.ok:
         return html.fromstring(page_response.content)
@@ -70,9 +73,9 @@ def download(url):
         if page_response.status_code == requests.codes.ok:
             return html.fromstring(page_response.content)
         else:
-            print(bcolors.WARNING+'[REVIEWS] bad response code: %d'+bcolors.ENDC % page_response.status_code)
+            print(bcolors.WARNING + '[REVIEWS] bad response code: %d' + bcolors.ENDC % page_response.status_code)
     else:
-        print('[REVIEWS] bad response code after 50 repeats: %d' % page_response.status_code)
+        print('[REVIEWS] bad response code after 100 repeats: %d' % page_response.status_code)
 
 
 def get_value(it):
@@ -242,20 +245,21 @@ class Entity():
         elif page_response.status_code == 302:
             print('Redirect to', page_response.url)
             print('Redirect2 to', page_response.headers['Location'])
-            page_response = requests.get(url=page_response.url, headers=_HEADERS_min, cookies=COOKIES, allow_redirects=False)
+            page_response = requests.get(url=page_response.url, headers=_HEADERS_min, cookies=COOKIES,
+                                         allow_redirects=False)
             if page_response.status_code == requests.codes.ok:
                 print('After redirect all cool!')
                 return html.fromstring(page_response.content)
             else:
                 print(page_response.history)
-                print(bcolors.WARNING+'bad response code: %d'+bcolors.ENDC % page_response.status_code)
+                print(bcolors.WARNING + 'bad response code: %d' + bcolors.ENDC % page_response.status_code)
         else:
             print('bad response code after 100 retries(: %d' % page_response.status_code)
 
     def collect_main_info(self):
         root = self.download()
         if root is None:
-            print(bcolors.WARNING+'Root is NONE for'+bcolors.ENDC, self.url)
+            print(bcolors.WARNING + 'Root is NONE for' + bcolors.ENDC, self.url)
             return
         title = check(root, '//h1[@id="HEADING"]/text()')
         print("Parsing '%s' . . . " % title, end='')
@@ -288,6 +292,7 @@ class Entity():
 
             # Reviews crawling:
             if self.reviews_count > 0 and self.crawl_reviews:
+                _parsed_r = 0
                 review_link_path = "//div[@class='review-container'][1]/div/div/div/div[2]/div/div[1]/div[2]/a/@href"
                 review_link = root.xpath(review_link_path)
                 if len(review_link) > 0:
@@ -295,6 +300,7 @@ class Entity():
                     while self.review_link != '':
                         review_page = download(self.review_link)
                         if review_page is not None:
+                            self.reviews = []
                             next_page = check(review_page, "//div[@class='']/div/div/a[2]/@href")
                             self.review_link = 'https://www.tripadvisor.com/' + next_page if next_page != '' else ''
                             review_containers = review_page.xpath("//div[@class='reviewSelector']")
@@ -334,12 +340,20 @@ class Entity():
                                             rating['rating']) > 1 else ''
                                         review['ratings'][i] = dict(rating)
                                 self.reviews.append(review)
-                            print('Collected: ', len(self.reviews), '/', self.reviews_count)
-
+                            _parsed_r += len(self.reviews)
+                            try:
+                                DB.reviews.insert_many(self.reviews)
+                            except BulkWriteError as exc:
+                                t = exc.details
+                                print(t)
+                            print('Collected: ', _parsed_r, '/', self.reviews_count)
+                        else:
+                            print(bcolors.WARNING + 'Can\'t find review page! Continue parsing...' + bcolors.ENDC)
+                            break
             self.details = root.xpath(details_xpath)
-            print(bcolors.OKGREEN+'Succeeded'+bcolors.ENDC)
+            print(bcolors.OKGREEN + 'Succeeded' + bcolors.ENDC)
         else:
-            print(bcolors.WARNING+'Failed'+bcolors.ENDC)
+            print(bcolors.WARNING + 'Failed' + bcolors.ENDC)
         self.success = True
 
     def dictify(self):
@@ -362,10 +376,10 @@ class Entity():
             # DB[self.collection].update({"noExist": True}, {"$setOnInsert": res}, True)
         except (BulkWriteError, DuplicateKeyError) as exc:
             pass
-        if self.reviews_count > 0 and self.crawl_reviews:
-            try:
-                DB.reviews.insert_many(self.reviews)
-            except BulkWriteError as exc:
-                t = exc.details
-                print(t)
+        # if self.reviews_count > 0 and self.crawl_reviews:
+        #     try:
+        #         DB.reviews.insert_many(self.reviews)
+        #     except BulkWriteError as exc:
+        #         t = exc.details
+        #         print(t)
         self.success = True
