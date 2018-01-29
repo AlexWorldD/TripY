@@ -13,7 +13,7 @@ if __name__ == '__main__':
     query = input('Please enter a city: ')
     out = input('Please enter filename: ')
     out = out if len(out) > 0 else 'output.json'
-    result = TripY.main_page(query if len(query) > 0 else 'Perm')
+    result = TripY.main_page(query if len(query) > 0 else 'Санкт')
     # with open(out, 'w') as f:
     #     json.dump(result, f, indent=4, ensure_ascii=False)
     print('Done')

@@ -165,7 +165,7 @@ details_xpath = "//div[@class='highlightedAmenity detailListItem']/text()"
 class Entity():
     def __init__(self, url='', collection='hotel', geo_id=0, reviews=False):
         # TODO try to change to .com let's see)
-        self.url = 'https://www.tripadvisor.ca' + url
+        self.url = 'https://www.tripadvisor.ru' + url
         self.success = False
         self.type = ''
         self.title = ''
@@ -218,8 +218,6 @@ class Entity():
         """
         Function for downloading HTML page from server to local machine.
         """
-        # _H = HEADERS
-        # _H['User-Agent'] = CONFIG.ui.random
         page_response = requests.get(url=self.url, headers=random_header(), cookies=COOKIES, allow_redirects=False)
         cnt = 0
         while page_response.status_code == 301:
@@ -234,7 +232,8 @@ class Entity():
             return html.fromstring(page_response.content)
         elif page_response.status_code == 302:
             print('Redirect to', page_response.url)
-            page_response = requests.get(url=page_response.url, headers=HEADERS, cookies=COOKIES, allow_redirects=False)
+            print('Redirect2 to', page_response.headers['Location'])
+            page_response = requests.get(url=page_response.url, headers=_HEADERS_min, cookies=COOKIES, allow_redirects=False)
             if page_response.status_code == requests.codes.ok:
                 print('After redirect all cool!')
                 return html.fromstring(page_response.content)
