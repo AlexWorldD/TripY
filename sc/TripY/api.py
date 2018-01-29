@@ -140,6 +140,9 @@ def main_page(query):
         # DEV mode, looking just one link
         if not CONFIG._DEV:
             crawler.collect_links()
+            while len(crawler.links)<crawler.numbers-10:
+                print('Recollect links due to the lack of them...')
+                crawler.collect_links()
         else:
             crawler.links = _links[key]
         print('%d links collected' % len(crawler.links))
