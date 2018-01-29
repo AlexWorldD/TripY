@@ -5,7 +5,7 @@ import json
 import re
 import time
 from pymongo import MongoClient
-from pymongo.errors import BulkWriteError
+from pymongo.errors import BulkWriteError, DuplicateKeyError
 from TripY.cluster_managment import default_config as CONFIG
 
 client = MongoClient(CONFIG.MONGO)  # change the ip and port to your mongo database's
@@ -348,7 +348,7 @@ class Entity():
             'type': self.type,
             'title': self.title,
             'url': self.url,
-            'id': int(self.ID),
+            '_id': int(self.ID),
             'address': dict(self.address),
             'contacts': self.contacts.__dict__,
             'prices': self.prices,
@@ -357,8 +357,10 @@ class Entity():
             'additional_details': list(self.details)
         }
         try:
+            # DB[self.collection].update_one({'_id': res['_id']}, res, upsert=True)
             DB[self.collection].insert_one(res)
-        except BulkWriteError as exc:
+            # DB[self.collection].update({"noExist": True}, {"$setOnInsert": res}, True)
+        except (BulkWriteError, DuplicateKeyError) as exc:
             pass
         if self.reviews_count > 0 and self.crawl_reviews:
             try:
