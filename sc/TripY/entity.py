@@ -195,37 +195,6 @@ class Entity():
         self.collection = collection
         self.geo_id = geo_id
 
-    def download_v2(self):
-        """
-        Function for downloading HTML page from server to local machine.
-        """
-        # _H = HEADERS
-        # _H['User-Agent'] = CONFIG.ui.random
-        page_response = requests.get(url=self.url, headers=random_header(), cookies=COOKIES, allow_redirects=False)
-        cnt = 0
-        while page_response.status_code == 301:
-            page_response = requests.get(url=self.url, headers=random_header(), cookies=COOKIES, allow_redirects=False)
-            cnt += 1
-            if cnt % 10 == 0:
-                print('Repeat request after 5s')
-                time.sleep(5)
-            if cnt > 100:
-                break
-        if page_response.status_code == requests.codes.ok:
-            return html.fromstring(page_response.content)
-        elif page_response.status_code == 302:
-            print('Redirect to', page_response.headers['Location'])
-            page_response = requests.get(url=page_response.headers['Location'], headers=_HEADERS_min, cookies=COOKIES)
-            print(page_response)
-            if page_response.status_code == requests.codes.ok:
-                print('After redirect all cool!')
-                return html.fromstring(page_response.content)
-            else:
-                print(page_response.history)
-                print('bad response code: %d' % page_response.status_code)
-        else:
-            print('bad response code: %d' % page_response.status_code)
-
     def download(self):
         """
         Function for downloading HTML page from server to local machine.
@@ -268,11 +237,15 @@ class Entity():
         ID = root.xpath('//@data-locid')
         if len(ID) > 0:
             self.ID = int(ID[0])
+        else:
+            print(bcolors.WARNING + '[ERROR] ID not found!' + bcolors.ENDC, self.url)
         # Contacts parsing:
         _tmp = root.xpath(
             "/html/body[@id='BODY_BLOCK_JQUERY_REFLOW']/div[@id='PAGE']/div[@id='taplc_hr_atf_north_star_nostalgic_0']/div[@class='atf_header_wrapper']/div[@class='atf_header ui_container is-mobile full_width']/div[@id='taplc_location_detail_header_hotels_0']/div[@class='prw_rup prw_common_atf_header_bl headerBL']/div[@class='blRow']")
         _tmp = _tmp if len(_tmp) > 0 else root.xpath('//div[@class="blRow"]')
-        self.contacts.parse(_tmp, d_id=self.ID, link=self.url)
+        if CONFIG._CONTACTS:
+            self.contacts.parse(_tmp, d_id=self.ID, link=self.url)
+        self.success = True
         # ---------
         _json = root.xpath('//script[@type="application/ld+json"]//text()')
 
@@ -354,7 +327,6 @@ class Entity():
             print(bcolors.OKGREEN + 'Succeeded' + bcolors.ENDC)
         else:
             print(bcolors.WARNING + 'Failed' + bcolors.ENDC)
-        self.success = True
 
     def dictify(self):
         res = {
@@ -375,11 +347,6 @@ class Entity():
             DB[self.collection].insert_one(res)
             # DB[self.collection].update({"noExist": True}, {"$setOnInsert": res}, True)
         except (BulkWriteError, DuplicateKeyError) as exc:
+            print(bcolors.WARNING + '[ITEMS] Duplicate found!' + bcolors.ENDC, self.url)
             pass
-        # if self.reviews_count > 0 and self.crawl_reviews:
-        #     try:
-        #         DB.reviews.insert_many(self.reviews)
-        #     except BulkWriteError as exc:
-        #         t = exc.details
-        #         print(t)
         self.success = True

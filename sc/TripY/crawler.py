@@ -59,6 +59,9 @@ class Crawler:
             for it in tqdm(pool.imap_unordered(self.get_links, _part_url, chunksize)):
                 self.links.extend(it)
             pool.close()
+        # Del duplicates
+        _l = set(self.links)
+        self.links = list(_l)
 
     def collect_data(self):
         """
@@ -67,18 +70,8 @@ class Crawler:
         """
         download_start = time.time()
         from .worker import parse_link
-        # try:
-        #     parse_link.apply_async(args=[self.links[0], self.key, self.geo_id, self.crawl_reviews], queue='wtf', retry=True,
-        #                            retry_policy={
-        #                                'max_retries': 3,
-        #                                'interval_start': 0,
-        #                                'interval_step': 0.2,
-        #                                'interval_max': 0.2,
-        #                            })
-        # except parse_link.OperationalError as exc:
-        #     print('Sending task raised: %r', exc)
         # TODO del before release
-        for link in self.links[:20]:
+        for link in self.links:
             # Add new link for parsing to the queue
             # if self.key == 'hotel':
             parse_link.apply_async(args=[link, self.key, self.geo_id, self.crawl_reviews], queue=self.key)

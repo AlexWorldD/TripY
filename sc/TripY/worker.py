@@ -23,6 +23,8 @@ def parse_link(self, url, key, geo_id, reviews):
         if entity.success:
             entity.dictify()
             print(bcolors.OKGREEN+'Insert to DB: Success'+bcolors.ENDC)
+        else:
+            print(bcolors.WARNING + '[ERROR] for: ' + bcolors.ENDC, url)
         return entity.success
     except Exception as exc:
         raise self.retry(exc=exc)
