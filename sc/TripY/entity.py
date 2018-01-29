@@ -11,6 +11,15 @@ from TripY.cluster_managment import default_config as CONFIG
 client = MongoClient(CONFIG.MONGO)  # change the ip and port to your mongo database's
 DB = client.TripY
 
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
 # CONSTANTS
 HEADERS = {
     'Accept': 'text/javascript, text/html, application/xml, text/xml, */*',
@@ -61,9 +70,9 @@ def download(url):
         if page_response.status_code == requests.codes.ok:
             return html.fromstring(page_response.content)
         else:
-            print('bad response code: %d' % page_response.status_code)
+            print(bcolors.WARNING+'[REVIEWS] bad response code: %d'+bcolors.ENDC % page_response.status_code)
     else:
-        print('bad response code: %d' % page_response.status_code)
+        print('[REVIEWS] bad response code after 50 repeats: %d' % page_response.status_code)
 
 
 def get_value(it):
@@ -239,13 +248,14 @@ class Entity():
                 return html.fromstring(page_response.content)
             else:
                 print(page_response.history)
-                print('bad response code: %d' % page_response.status_code)
+                print(bcolors.WARNING+'bad response code: %d'+bcolors.ENDC % page_response.status_code)
         else:
-            print('bad response code: %d' % page_response.status_code)
+            print('bad response code after 100 retries(: %d' % page_response.status_code)
 
     def collect_main_info(self):
         root = self.download()
         if root is None:
+            print(bcolors.WARNING+'Root is NONE for'+bcolors.ENDC, self.url)
             return
         title = check(root, '//h1[@id="HEADING"]/text()')
         print("Parsing '%s' . . . " % title, end='')
@@ -327,9 +337,9 @@ class Entity():
                             print('Collected: ', len(self.reviews), '/', self.reviews_count)
 
             self.details = root.xpath(details_xpath)
-            print('Succeeded')
+            print(bcolors.OKGREEN+'Succeeded'+bcolors.ENDC)
         else:
-            print('Failed')
+            print(bcolors.WARNING+'Failed'+bcolors.ENDC)
         self.success = True
 
     def dictify(self):

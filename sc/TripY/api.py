@@ -151,5 +151,6 @@ def main_page(query):
     DB['GEO'].insert_one(RESULT)
     # RESULT['Entities'][key + 's'] = [entity.dictify() for entity in crawler.data]
     download_end = time.time()
-    print("Finished crawling MAIN page: ", download_end - download_start, ' s')
+    print("Finished broadcasting links from MAIN page to workers: ", download_end - download_start, ' s')
+    print("Please wait the end of crawling... May be a cup of coffee? :)")
     return RESULT

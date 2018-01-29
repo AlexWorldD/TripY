@@ -78,7 +78,7 @@ class Crawler:
         # except parse_link.OperationalError as exc:
         #     print('Sending task raised: %r', exc)
         # TODO del before release
-        for link in self.links:
+        for link in self.links[:20]:
             # Add new link for parsing to the queue
             # if self.key == 'hotel':
             parse_link.apply_async(args=[link, self.key, self.geo_id, self.crawl_reviews], queue=self.key)
