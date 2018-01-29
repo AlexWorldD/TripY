@@ -8,7 +8,7 @@ from pymongo import MongoClient
 from pymongo.errors import BulkWriteError, DuplicateKeyError
 from TripY.cluster_managment import default_config as CONFIG
 
-client = MongoClient(CONFIG.MONGO)  # change the ip and port to your mongo database's
+client = MongoClient(CONFIG.MONGO)  # change the ip and port to your Mongo database's
 DB = client.TripY
 
 
@@ -326,7 +326,7 @@ class Entity():
             self.details = root.xpath(details_xpath)
             print(bcolors.OKGREEN + 'Succeeded' + bcolors.ENDC)
         else:
-            print(bcolors.WARNING + 'Failed' + bcolors.ENDC)
+            print(bcolors.WARNING + 'Failed with JSON' + bcolors.ENDC)
 
     def dictify(self):
         res = {

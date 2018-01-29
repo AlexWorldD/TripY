@@ -71,15 +71,9 @@ class Crawler:
         download_start = time.time()
         from .worker import parse_link
         # TODO del before release
-        for link in self.links:
+        for link in self.links[:50]:
             # Add new link for parsing to the queue
-            # if self.key == 'hotel':
             parse_link.apply_async(args=[link, self.key, self.geo_id, self.crawl_reviews], queue=self.key)
-            # print(r.get())
-            # if self.key == 'attraction':
-            #     parse_link_a.delay(link, self.key)
-            # if self.key == 'restaurant':
-            #     parse_link_r.delay(link, self.key)
         download_end = time.time()
         del parse_link
         print("Finished broadcasting links:", download_end - download_start, ' s')

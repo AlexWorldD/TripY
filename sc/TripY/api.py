@@ -62,9 +62,9 @@ def main_page(query):
     RESULT['Description'] = _descr[0][1:-1] if len(_descr) > 0 else ''
 
     # Specify all possible places for city
-    # possible_types = link_paths.keys()
+    possible_types = link_paths.keys()
     # possible_types = ['hotel', 'restaurant', 'attraction']  # for testing
-    possible_types = ['hotel', 'restaurant']  # for testing
+    # possible_types = ['hotel', 'restaurant']  # for testing
     # _links = {'hotel': [
     #     "/Hotel_Review-g298507-d300401-Reviews-Renaissance_St_Petersburg_Baltic_Hotel-St_Petersburg_Northwestern_District.html"],
     #     'restaurant': [
@@ -151,6 +151,7 @@ def main_page(query):
         del crawler
     for craw in _crawlers:
         craw.collect_data()
+        print(craw.key, 'DONE')
     DB['GEO'].insert_one(RESULT)
     # RESULT['Entities'][key + 's'] = [entity.dictify() for entity in crawler.data]
     download_end = time.time()
