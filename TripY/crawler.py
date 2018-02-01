@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 import time
-import importlib
 from .entity import HEADERS, COOKIES, download
 import requests
 # TODO add to Docker
@@ -71,7 +70,7 @@ class Crawler:
         download_start = time.time()
         from .worker import parse_link
         # TODO del before release
-        for link in self.links[:50]:
+        for link in self.links:
             # Add new link for parsing to the queue
             parse_link.apply_async(args=[link, self.key, self.geo_id, self.crawl_reviews], queue=self.key)
         download_end = time.time()
