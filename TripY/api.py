@@ -157,4 +157,5 @@ def main_page(query):
     download_end = time.time()
     print("Finished broadcasting links from MAIN page to workers: ", download_end - download_start, ' s')
     print("Please wait the end of crawling... May be a cup of coffee? :)")
+    print('You can find your data in MongoDB ->', CONFIG.MONGO)
     return RESULT
