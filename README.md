@@ -1,6 +1,12 @@
 ## TripY :earth_africa: :	Crawler	for TripAdvisor
 Magnificent crawler: powerful, scalable and purely sexy. The	main goal	is	collecting	data	from	well-known	site	for	travelers	– TripAdvisor.
 
+### Authors:
+* [Alexey](https://github.com/AlexWorldD)
+* [Kirill](https://github.com/Iwrestledabeeronce)
+
+<hr>
+
 ### 1. REQUIMENTS
 
 ### This	crawler	is	based	on	the	following	techniques:
@@ -15,7 +21,7 @@ Magnificent crawler: powerful, scalable and purely sexy. The	main goal	is	collec
 
 ### 2. INSTALLATION
 
-**[Master] MongoDB**
+**[Master]** MongoDB
 
 First	of	all,	we	need	a	Database	for	storing	our	crawled	data.	Taking	into	account	the	
 hierarchical	and	quite	complex	structure	of	data,	we	have	selected	 MondoDB as	a	database	for	
@@ -35,7 +41,7 @@ _authorization: 'enabled'_
 
 We	have	finished	with	database	installation	now.
 
-**[Master]	RabbitMQ**
+**[Master]**	RabbitMQ
 
 For	making	easier	next	step,	we’ve	prepared	some	bash	scripts,	which	you	can	find	in	
 project	repo.	However,	if	you	prefer	manual	installation	– it’s	your	choice!
@@ -58,7 +64,7 @@ URL: 159.65.17.172:
 We’ve	finished	with	required stuff	on	the	**[Master]**	side,	so	now	we	can	prepare our	workers.
 
 
-**[Worker] Docker	and	Docker-compose**
+**[Worker]** Docker	and	Docker-compose
 
 Have	a	look	on	[this](https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-ubuntu-16-04) tutorial.
 
